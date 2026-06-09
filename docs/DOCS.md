@@ -36,7 +36,11 @@
 
 ## Запуск
 
-API запускается из src через команду
-```
-uvicorn main:app
+### API
+
+Устанавите [uv](https://docs.astral.sh/uv/)
+
+запускаете из src через команду
+``` bash
+uv run uvicorn main:app
 ```
