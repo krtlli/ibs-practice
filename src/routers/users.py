@@ -1,6 +1,7 @@
 import sqlite3
+from datetime import date, time
 from fastapi import APIRouter, HTTPException, Header
-from schemas import UserAuth
+from schemas import UserAuth, BookingResponse
 from typing import List
 from config import DB_FILE
 
@@ -34,3 +35,30 @@ def admin_register(user: UserAuth, x_token: str = Header(...)):
         conn.commit()
         
         return {"message": f"Пользователь {user.username} успешно зарегистрирован администратором"}
+
+@router.get("/api/users/{username}/bookings", response_model=List[BookingResponse])
+def get_user_bookings(username: str):
+    """Получить все бронирования пользователя"""
+    with sqlite3.connect(DB_FILE) as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT 1 FROM users WHERE username = ?", (username,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+        cursor.execute(
+            "SELECT id, room, booking_date, start_time, end_time FROM bookings WHERE username = ?",
+            (username,)
+        )
+        rows = cursor.fetchall()
+        return [
+            {
+                "id": r[0],
+                "room": r[1],
+                "username": username,
+                "booking_date": date.fromisoformat(r[2]),
+                "start_time": time.fromisoformat(r[3]),
+                "end_time": time.fromisoformat(r[4]),
+            }
+            for r in rows
+        ]
