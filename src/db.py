@@ -18,12 +18,28 @@ def init_db():
         cursor.execute("CREATE TABLE IF NOT EXISTS rooms (name TEXT PRIMARY KEY)")
         for room in ["Переговорная 1", "Переговорная 2", "Переговорная 3"]:
             cursor.execute("INSERT OR IGNORE INTO rooms (name) VALUES (?)", (room,))
+        cursor.execute("CREATE TABLE IF NOT EXISTS workspaces (name TEXT PRIMARY KEY)")
+        for workspace in ["Комп 1", "Комп 2", "Комп 3"]:
+            cursor.execute("INSERT OR IGNORE INTO workspaces (name) VALUES (?)", (workspace,))
         conn.commit()
-        #Брони
+        #Брони переговорных
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS bookings (
                 id TEXT PRIMARY KEY,
                 room TEXT,
+                username TEXT,
+                booking_date TEXT,
+                start_time TEXT,
+                end_time TEXT,
+                participants TEXT DEFAULT '[]'
+            )
+        """)
+
+        #Брони рабочих мест
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS workspace_bookings (
+                id TEXT PRIMARY KEY,
+                workspace TEXT,
                 username TEXT,
                 booking_date TEXT,
                 start_time TEXT,
