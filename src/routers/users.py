@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Header
 from schemas import UserAuth, BookingResponse
 from typing import List
 from config import DB_FILE
+import json
 
 router = APIRouter(tags=["Users"])
 
@@ -47,7 +48,7 @@ def get_user_bookings(username: str):
             raise HTTPException(status_code=404, detail="Пользователь не найден")
 
         cursor.execute(
-            "SELECT id, room, booking_date, start_time, end_time FROM bookings WHERE username = ?",
+            "SELECT id, room, booking_date, start_time, end_time, participants FROM bookings WHERE username = ?",
             (username,)
         )
         rows = cursor.fetchall()
@@ -59,6 +60,7 @@ def get_user_bookings(username: str):
                 "booking_date": date.fromisoformat(r[2]),
                 "start_time": time.fromisoformat(r[3]),
                 "end_time": time.fromisoformat(r[4]),
+                "participants": json.loads(r[5]) if r[5] else [],
             }
             for r in rows
         ]
