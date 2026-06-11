@@ -2,28 +2,43 @@
 
 ## Общая информация
 
-Базовый префикс API: `/api`
+**Base URL:** `/api`
 
-Формат обмена данными: `application/json`
+**Content-Type:** `application/json`
+
+Для авторизованных запросов используется заголовок:
+
+```http
+X-Token: <username>
+```
+
+Токеном является имя пользователя, полученное при входе.
 
 ---
 
 ## Аутентификация
 
-### Login
+### POST /api/login
 
-**Endpoint:** `POST /api/login`
-
-#### Успешный ответ (`200 OK`)
+#### Request Body
 
 ```json
 {
-  "token": "username",
+  "username": "ivan",
+  "password": "password123"
+}
+```
+
+#### Response 200
+
+```json
+{
+  "token": "ivan",
   "is_admin": false
 }
 ```
 
-#### Ошибка (`400 Bad Request`)
+#### Response 400
 
 ```json
 {
@@ -35,43 +50,53 @@
 
 ## Бронирование комнат
 
-### Получить бронирования комнаты
+### GET /api/booking-rooms/{room}
 
-**Endpoint:** `GET /api/booking-rooms/{room}`
+Получить все бронирования комнаты.
 
 #### Path Parameters
 
-| Параметр | Тип | Описание |
-|-----------|------|----------|
-| room | string | Название или идентификатор комнаты |
+| Поле | Тип |
+|--------|--------|
+| room | string |
 
-#### Успешный ответ (`200 OK`)
+#### Response 200
 
 ```json
 [
   {
-    "id": 1,
+    "id": "e4eaaaf2-d142-11e1-b3e4-080027620cdd",
     "room": "Конференц-зал",
     "username": "ivan",
     "booking_date": "2026-06-10",
     "start_time": "14:00:00",
     "end_time": "15:30:00",
-    "participants": ["user1", "user2"]
+    "participants": ["alex", "maria"]
   }
 ]
 ```
 
-Пустой результат:
+### POST /api/booking-rooms
 
-```json
-[]
+#### Headers
+
+```http
+X-Token: ivan
 ```
 
-### Создать бронирование комнаты
+#### Request Body
 
-**Endpoint:** `POST /api/booking-rooms`
+```json
+{
+  "room": "Конференц-зал",
+  "booking_date": "2026-06-10",
+  "start_time": "14:00:00",
+  "end_time": "15:30:00",
+  "participants": ["alex", "maria"]
+}
+```
 
-#### Успешный ответ
+#### Response 200
 
 ```json
 {
@@ -81,11 +106,11 @@
   "booking_date": "2026-06-10",
   "start_time": "14:00:00",
   "end_time": "15:30:00",
-  "participants": ["user1", "user2"]
+  "participants": ["alex", "maria"]
 }
 ```
 
-#### Возможные ошибки
+#### Response 400
 
 ```json
 {
@@ -101,15 +126,19 @@
 
 ```json
 {
-  "detail": "Пользователи не найдены: имя1, имя2"
+  "detail": "Пользователи не найдены: alex, maria"
 }
 ```
 
-### Удалить бронирование комнаты
+### DELETE /api/booking-rooms/{booking_id}
 
-**Endpoint:** `DELETE /api/booking-rooms/{booking_id}`
+#### Headers
 
-#### Успешный ответ
+```http
+X-Token: ivan
+```
+
+#### Response 200
 
 ```json
 {
@@ -117,13 +146,7 @@
 }
 ```
 
-#### Возможные ошибки
-
-```json
-{
-  "detail": "Бронь не найдена"
-}
-```
+#### Response 403
 
 ```json
 {
@@ -131,20 +154,32 @@
 }
 ```
 
+#### Response 404
+
+```json
+{
+  "detail": "Бронь не найдена"
+}
+```
+
 ---
 
 ## Бронирование рабочих мест
 
-### Получить бронирования рабочего места
+### GET /api/booking-workspace/{workspace}
 
-**Endpoint:** `GET /api/booking-workspace/{workspace}`
+#### Path Parameters
 
-#### Успешный ответ
+| Поле | Тип |
+|--------|--------|
+| workspace | string |
+
+#### Response 200
 
 ```json
 [
   {
-    "id": 1,
+    "id": "uuid",
     "workspace": "Стол 1",
     "username": "ivan",
     "booking_date": "2026-06-10",
@@ -154,17 +189,26 @@
 ]
 ```
 
-Пустой результат:
+### POST /api/booking-workspace
 
-```json
-[]
+#### Headers
+
+```http
+X-Token: ivan
 ```
 
-### Создать бронирование рабочего места
+#### Request Body
 
-**Endpoint:** `POST /api/booking-workspace`
+```json
+{
+  "workspace": "Стол 1",
+  "booking_date": "2026-06-10",
+  "start_time": "14:00:00",
+  "end_time": "15:30:00"
+}
+```
 
-#### Успешный ответ
+#### Response 200
 
 ```json
 {
@@ -177,7 +221,7 @@
 }
 ```
 
-#### Возможные ошибки
+#### Response 400
 
 ```json
 {
@@ -191,11 +235,15 @@
 }
 ```
 
-### Удалить бронирование рабочего места
+### DELETE /api/booking-workspace/{booking_id}
 
-**Endpoint:** `DELETE /api/booking-workspace/{booking_id}`
+#### Headers
 
-#### Успешный ответ
+```http
+X-Token: ivan
+```
+
+#### Response 200
 
 ```json
 {
@@ -203,13 +251,7 @@
 }
 ```
 
-#### Возможные ошибки
-
-```json
-{
-  "detail": "Бронь не найдена"
-}
-```
+#### Response 403
 
 ```json
 {
@@ -217,67 +259,68 @@
 }
 ```
 
+#### Response 404
+
+```json
+{
+  "detail": "Бронь не найдена"
+}
+```
+
 ---
 
 ## Справочники
 
-### Получить список комнат
-
-**Endpoint:** `GET /api/rooms`
+### GET /api/rooms
 
 ```json
-[
-  "Конференц-зал",
-  "Переговорная 1"
-]
+["Конференц-зал", "Переговорная 1"]
 ```
 
-### Получить список рабочих мест
-
-**Endpoint:** `GET /api/workspaces`
+### GET /api/workspaces
 
 ```json
-[
-  "Стол 1",
-  "Стол 2"
-]
+["Стол 1", "Стол 2"]
 ```
 
-### Получить список пользователей
-
-**Endpoint:** `GET /api/users`
+### GET /api/users
 
 ```json
-[
-  "ivan_ivanov",
-  "alex",
-  "maria_p"
-]
+["ivan", "alex", "maria"]
 ```
 
 ---
 
 ## Пользователи
 
-### Регистрация пользователя администратором
+### POST /api/users/add
 
-**Endpoint:** `POST /api/users/add`
+Создание пользователя администратором.
 
-#### Успешный ответ
+#### Headers
+
+```http
+X-Token: admin
+```
+
+#### Request Body
 
 ```json
 {
-  "message": "Пользователь username успешно зарегистрирован администратором"
+  "username": "new_user",
+  "password": "password123"
 }
 ```
 
-#### Возможные ошибки
+#### Response 200
 
 ```json
 {
-  "detail": "Доступ запрещен. Только для администраторов"
+  "message": "Пользователь new_user успешно зарегистрирован администратором"
 }
 ```
+
+#### Response 400
 
 ```json
 {
@@ -285,27 +328,39 @@
 }
 ```
 
-### Получить бронирования пользователя
+#### Response 403
 
-**Endpoint:** `GET /api/users/{username}/bookings`
+```json
+{
+  "detail": "Доступ запрещен. Только для администраторов"
+}
+```
 
-#### Успешный ответ
+### GET /api/users/{username}/bookings
+
+#### Path Parameters
+
+| Поле     | Тип    |
+|----------|--------|
+| username | string |
+
+#### Response 200
 
 ```json
 [
   {
-    "id": 1,
+    "id": "uuid",
     "room": "Конференц-зал",
     "username": "ivan",
     "booking_date": "2026-06-11",
     "start_time": "10:00:00",
     "end_time": "11:00:00",
-    "participants": ["user2", "user3"]
+    "participants": ["alex"]
   }
 ]
 ```
 
-#### Ошибка
+#### Response 404
 
 ```json
 {
