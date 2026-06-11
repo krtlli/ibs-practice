@@ -37,6 +37,7 @@ def admin_register(user: UserAuth, x_token: str = Header(...)):
         
         return {"message": f"Пользователь {user.username} успешно зарегистрирован администратором"}
 
+# Сделано Феликсом
 @router.get("/api/users/{username}/bookings", response_model=List[BookingResponse])
 def get_user_bookings(username: str):
     """Получить все бронирования пользователя"""

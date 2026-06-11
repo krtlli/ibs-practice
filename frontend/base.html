@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>SpaceManage Pro — IBS</title>
+    <style>
+        @font-face {
+            font-family: 'Attractive-Black';
+            src: url('Attractive-Black.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Attractive-Black', 'Segoe UI', sans-serif; }
+        body { background-color: #EFF2F7; color: #1A2C3E; }
+
+        .app-wrapper { display: flex; min-height: 100vh; max-width: 1600px; margin: 0 auto; }
+        .sidebar-menu {
+            width: 260px; background: #FFFFFF; border-radius: 24px; margin: 20px 0 20px 20px;
+            padding: 24px 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #E2E8F0;
+            display: flex; flex-direction: column; gap: 24px; height: calc(100vh - 40px);
+            position: sticky; top: 20px; overflow-y: auto;
+        }
+        .menu-logo { display: flex; align-items: center; gap: 12px; padding-bottom: 20px; border-bottom: 1px solid #E2E8F0; }
+        .menu-logo-img { width: 44px; height: 44px; border-radius: 12px; object-fit: contain; background: #1E3A5F; display: flex; align-items: center; justify-content: center; color: white; font-size: 22px; font-weight: 700; flex-shrink: 0; }
+        .menu-logo-text h2 { font-size: 1.1rem; color: #1E3A5F; font-weight: 700; }
+        .menu-logo-text p { font-size: 0.65rem; color: #64748B; }
+        .menu-nav { display: flex; flex-direction: column; gap: 8px; }
+        .menu-item { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-radius: 14px; cursor: pointer; transition: all 0.2s; color: #475569; font-weight: 500; font-size: 0.9rem; }
+        .menu-item:hover { background: #F1F5F9; }
+        .menu-item.active { background: #1E3A5F; color: white; }
+        .menu-user-card { margin-top: auto; background: #F8FAFE; border-radius: 16px; padding: 16px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+        .menu-user-name { font-weight: 600; color: #1E3A5F; margin-top: 8px; font-size: 0.9rem; }
+        .menu-user-email { font-size: 0.7rem; color: #64748B; }
+        .main-area { flex: 1; padding: 20px 28px 20px 20px; min-width: 0; }
+        .main-header { background: #FFFFFF; border-radius: 20px; margin-bottom: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 16px 28px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; border: 1px solid #E2E8F0; }
+        .logo-area { display: flex; align-items: center; gap: 12px; }
+        .logo-img-header { width: 48px; height: 48px; border-radius: 14px; object-fit: contain; background: #1E3A5F; display: flex; align-items: center; justify-content: center; color: white; font-size: 26px; font-weight: 800; flex-shrink: 0; }
+        .logo-text h1 { font-size: 1.3rem; font-weight: 700; color: #1E3A5F; }
+        .logo-text p { font-size: 0.7rem; color: #64748B; }
+        .nav-controls { display: flex; align-items: center; gap: 16px; background: #F8FAFE; padding: 6px 16px; border-radius: 40px; border: 1px solid #E2E8F0; }
+        .office-selector select, .floor-selector select { padding: 8px 14px; border: 1px solid #CBD5E0; border-radius: 30px; font-size: 0.85rem; background: white; cursor: pointer; }
+        .filter-bar { display: flex; align-items: center; gap: 12px; background: #F8FAFE; padding: 6px 18px; border-radius: 40px; border: 1px solid #E2E8F0; }
+        .filter-group { display: flex; align-items: center; gap: 8px; }
+        .filter-group label { font-size: 0.75rem; font-weight: 500; color: #64748B; }
+        .filter-group input { padding: 6px 12px; border: 1px solid #CBD5E0; border-radius: 30px; font-size: 0.8rem; background: white; }
+        .header-actions { display: flex; align-items: center; gap: 12px; }
+        .icon-btn { background: #F1F5F9; border: none; cursor: pointer; padding: 10px; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; position: relative; }
+        .icon-btn:hover { background: #E2E8F0; transform: scale(1.02); }
+        .dropdown { position: relative; }
+        .dropdown-menu { position: absolute; top: 55px; right: 0; background: white; border-radius: 20px; box-shadow: 0 12px 35px rgba(0,0,0,0.12); min-width: 320px; display: none; z-index: 1000; border: 1px solid #E2E8F0; }
+        .dropdown-menu.show { display: block; animation: slideDown 0.2s ease; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .dropdown-header { padding: 14px 18px; background: #F8FAFE; border-bottom: 1px solid #E2E8F0; font-weight: 600; color: #1E3A5F; display: flex; justify-content: space-between; border-radius: 20px 20px 0 0; }
+        .dropdown-item { padding: 12px 18px; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #F1F5F9; font-size: 0.85rem; }
+        .dropdown-item:hover { background: #F8FAFE; }
+        .stats { display: flex; gap: 16px; margin-bottom: 24px; justify-content: flex-end; flex-wrap: wrap; }
+        .stat-card { background: white; padding: 10px 24px; border-radius: 40px; font-size: 0.85rem; font-weight: 500; border: 1px solid #E2E8F0; }
+        .stat-card span { color: #1E3A5F; font-weight: 700; font-size: 1.2rem; margin-left: 6px; }
+        .map-container { background: white; border-radius: 24px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #E2E8F0; margin-bottom: 24px; }
+        .map-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+        .map-title { font-weight: 700; font-size: 1.1rem; color: #1E3A5F; }
+        .zoom-controls { display: flex; gap: 8px; align-items: center; background: #F1F5F9; padding: 5px 12px; border-radius: 30px; }
+        .zoom-btn { background: white; border: 1px solid #CBD5E0; width: 36px; height: 36px; border-radius: 30px; font-size: 18px; cursor: pointer; transition: all 0.2s; }
+        .zoom-btn:hover { background: #E2E8F0; transform: scale(1.05); }
+        .zoom-level { font-size: 12px; color: #64748B; min-width: 60px; text-align: center; font-weight: 500; }
+        .editor-controls { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
+        .mode-btn { background-color: #64748B; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+        .mode-btn:hover { opacity: 0.85; }
+        .mode-btn-active { background-color: #27ae60 !important; }
+        .move-btn { background-color: #e67e22; }
+        .delete-btn-mode { background-color: #e74c3c; }
+        .add-btn { background-color: #3498db; }
+        .reset-map-btn { background-color: #95a5a6; }
+        .legend { display: flex; gap: 20px; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; }
+        .legend-color { width: 16px; height: 16px; border-radius: 50%; }
+        .map-content { display: flex; flex: 1; gap: 20px; }
+        .map-area { flex: 1; position: relative; min-height: 500px; overflow: hidden; border-radius: 16px; background: #FAFCFE; }
+        .map-wrapper { position: relative; width: 100%; height: 100%; min-height: 550px; overflow: auto; background: #FAFCFE; border-radius: 16px; cursor: grab; }
+        .map-wrapper:active { cursor: grabbing; }
+        .map-inner { position: relative; transform-origin: 0 0; transition: transform 0.1s ease; width: 100%; display: inline-block; }
+        .office-plan-img { width: 100%; height: auto; display: block; border-radius: 8px; pointer-events: none; user-select: none; }
+        .floor-placeholder { width: 100%; min-height: 550px; background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; color: #94a3b8; font-size: 1.1rem; pointer-events: none; }
+        .map-object { position: absolute; z-index: 5; transition: transform 0.15s ease; transform: translate(-50%, -50%); display: flex; justify-content: center; align-items: center; user-select: none; cursor: pointer; }
+        .map-object:hover { transform: translate(-50%, -50%) scale(1.2); z-index: 10; }
+        .object-infra { width: 32px; height: 32px; border-radius: 50%; background-color: #34495e; color: #ffffff; font-size: 14px; font-weight: bold; box-shadow: 0 3px 8px rgba(0,0,0,0.3); border: 2px solid #ffffff; }
+        .object-chair { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: transform 0.15s ease; }
+        .chair-available { background-color: #2ecc71; }
+        .chair-occupied { background-color: #e74c3c; }
+        .chair-highlighted { animation: pulse 0.8s infinite alternate; box-shadow: 0 0 15px #3498db; border-color: #3498db; width: 20px; height: 20px; z-index: 8; }
+        @keyframes pulse { from { transform: translate(-50%, -50%) scale(1); } to { transform: translate(-50%, -50%) scale(1.3); } }
+
+        /* ПЕРЕГОВОРНЫЕ КОМНАТЫ */
+        .object-meeting-room { width: 42px; height: 42px; border-radius: 12px; background-color: #3498db; color: white; font-size: 22px; font-weight: bold; box-shadow: 0 3px 8px rgba(0,0,0,0.3); border: 2px solid #ffffff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .object-meeting-room:hover { transform: translate(-50%, -50%) scale(1.15); }
+        .meeting-available { background-color: #3498db; box-shadow: 0 0 8px rgba(52,152,219,0.5); }
+        .meeting-occupied { background-color: #e74c3c; }
+        .meeting-highlighted { animation: pulse-meeting 0.8s infinite alternate; box-shadow: 0 0 20px #f39c12; border-color: #f39c12; width: 48px; height: 48px; z-index: 8; }
+        @keyframes pulse-meeting { from { transform: translate(-50%, -50%) scale(1); } to { transform: translate(-50%, -50%) scale(1.2); } }
+
+        /* ЗОНЫ ОТДЫХА: PlayStation, Теннис, Массаж (НЕ участвуют в поиске ближайших мест) */
+        .object-recreation { width: 42px; height: 42px; border-radius: 12px; background-color: #9b59b6; color: white; font-size: 22px; font-weight: bold; box-shadow: 0 3px 8px rgba(0,0,0,0.3); border: 2px solid #ffffff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .object-recreation:hover { transform: translate(-50%, -50%) scale(1.15); }
+        .rec-available { background-color: #9b59b6; }
+        .rec-occupied { background-color: #e74c3c; }
+
+        .tooltip { position: fixed; background: #1E293B; color: white; padding: 10px 16px; border-radius: 12px; font-size: 0.75rem; z-index: 1500; pointer-events: none; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .tooltip::before { content: ''; position: absolute; top: -6px; left: 50%; transform: translateX(-50%); border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 6px solid #1E293B; }
+        .sidebar { width: 350px; background-color: #fff; border-left: 1px solid #e0e0e0; padding: 25px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; border-radius: 16px; }
+        .info-card { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; }
+        .info-card h3 { margin-bottom: 8px; color: #1e293b; font-size: 18px; }
+        .nearest-title { font-weight: 600; font-size: 14px; color: #1e293b; margin-top: 15px; margin-bottom: 8px; }
+        .nearest-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+        .nearest-item { background: #fff; border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .nearest-item:hover { background: #f8fafc; }
+        .empty-state { color: #94a3b8; text-align: center; margin-top: 40px; font-size: 14px; }
+        .calendar-view { display: none; background: white; border-radius: 24px; padding: 24px; border: 1px solid #E2E8F0; margin-bottom: 24px; }
+        .calendar-view.show { display: block; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+        .calendar-weekday { text-align: center; font-weight: 600; color: #64748B; padding: 12px; }
+        .calendar-day { background: #F8FAFE; border-radius: 12px; padding: 12px 8px; text-align: center; cursor: pointer; transition: all 0.2s; min-height: 80px; }
+        .calendar-day:hover { background: #E2E8F0; }
+        .calendar-day-number { font-weight: 600; font-size: 1rem; margin-bottom: 4px; }
+        .booking-dot { width: 6px; height: 6px; background: #3498db; border-radius: 50%; margin: 2px auto; }
+        .event-badge { background: #1E3A5F; color: white; font-size: 10px; padding: 2px 6px; border-radius: 20px; margin-top: 4px; display: inline-block; }
+        .booking-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 2000; align-items: center; justify-content: center; }
+        .booking-modal.show { display: flex; }
+        .booking-modal-content { background: white; border-radius: 28px; padding: 32px; max-width: 500px; width: 90%; animation: slideUp 0.3s ease; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-weight: 500; font-size: 0.8rem; color: #64748B; margin-bottom: 6px; }
+        .form-group input, .form-group select { width: 100%; padding: 12px 14px; border: 1px solid #CBD5E0; border-radius: 14px; font-size: 0.9rem; }
+        .modal-buttons { display: flex; gap: 12px; margin-top: 24px; flex-direction: column; align-items: center; }
+        .btn { padding: 12px 20px; border-radius: 40px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; }
+        .btn-primary { background: #1E3A5F; color: white; flex: 1; }
+        .btn-secondary { background: #F1F5F9; color: #1E293B; flex: 1; }
+        .type-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .type-option { padding: 10px; border: 1px solid #CBD5E0; border-radius: 12px; cursor: pointer; text-align: center; transition: all 0.2s; background: white; font-size: 0.85rem; }
+        .type-option.selected { background: #1E3A5F; color: white; border-color: #1E3A5F; }
+        .profile-page { display: none; background: white; border-radius: 24px; padding: 28px; margin-bottom: 24px; border: 1px solid #E2E8F0; }
+        .profile-page.show { display: block; }
+        .profile-header { display: flex; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #E2E8F0; }
+        .profile-title { font-size: 1.5rem; font-weight: 700; color: #1E3A5F; }
+        .booking-item, .history-item { background: #F8FAFE; padding: 14px; border-radius: 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .booking-actions { display: flex; gap: 8px; }
+        .btn-cancel-booking { background: #FEE2E2; color: #DC2626; border: none; padding: 6px 14px; border-radius: 30px; font-size: 0.7rem; cursor: pointer; }
+        .btn-edit-booking { background: #FEF3C7; color: #D97706; border: none; padding: 6px 14px; border-radius: 30px; font-size: 0.7rem; cursor: pointer; }
+        .back-btn { background: #F1F5F9; border: none; padding: 8px 20px; border-radius: 30px; cursor: pointer; font-size: 0.85rem; }
+        .admin-panel { margin-top: 24px; background: #F8FAFE; border-radius: 20px; padding: 20px; border: 1px solid #E2E8F0; }
+        .admin-panel h3 { font-size: 1.2rem; color: #1E3A5F; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .admin-users-list { max-height: 300px; overflow-y: auto; margin-bottom: 20px; }
+        .admin-user-item { background: white; padding: 12px 16px; border-radius: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #E2E8F0; }
+        .admin-user-info { display: flex; flex-direction: column; gap: 4px; }
+        .admin-user-name { font-weight: 600; color: #1E3A5F; }
+        .admin-user-email { font-size: 0.7rem; color: #64748B; }
+        .admin-user-pass { font-size: 0.65rem; color: #94A3B8; }
+        .admin-delete-btn { background: #FEE2E2; border: none; color: #DC2626; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 0.7rem; transition: all 0.2s; }
+        .admin-delete-btn:hover { background: #FECACA; }
+        .admin-add-form { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #E2E8F0; }
+        .admin-add-form input { flex: 1; min-width: 140px; padding: 10px 12px; border: 1px solid #CBD5E0; border-radius: 30px; font-size: 0.8rem; }
+        .admin-add-btn { background: #1E3A5F; color: white; border: none; padding: 8px 20px; border-radius: 30px; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+        .admin-add-btn:hover { background: #2D4A6E; }
+        .under-development { display: flex; align-items: center; justify-content: center; height: 500px; flex-direction: column; gap: 20px; background: #F8FAFE; border-radius: 16px; margin: 20px; }
+        .toast { position: fixed; bottom: 24px; right: 24px; background: #1E3A5F; color: white; padding: 12px 24px; border-radius: 40px; z-index: 3000; animation: fadeInOut 2.5s ease; font-size: 0.85rem; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+        .toast.error { background-color: #e74c3c; }
+        @keyframes fadeInOut { 0% { opacity: 0; transform: translateY(20px); } 15% { opacity: 1; transform: translateY(0); } 85% { opacity: 1; } 100% { opacity: 0; transform: translateY(20px); } }
+        .confirm-popup { position: fixed; bottom: 24px; right: 24px; background: white; border-radius: 20px; padding: 20px 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); border: 1px solid #E2E8F0; z-index: 3500; min-width: 300px; display: none; animation: slideUp 0.3s ease; }
+        .confirm-popup.show { display: block; }
+        .confirm-popup-title { font-weight: 700; color: #1E3A5F; margin-bottom: 8px; }
+        .confirm-popup-info { font-size: 0.8rem; color: #64748B; margin-bottom: 16px; }
+        .confirm-popup-btns { display: flex; gap: 10px; }
+
+        /* Анимированные кнопки */
+        .animated-btn { background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important; transition: all 0.2s ease; border: none; cursor: pointer; position: relative; overflow: hidden; display: inline-block; font-size: 0 !important; color: transparent !important; text-indent: -9999px !important; }
+        .animated-btn:hover { transform: scale(1.03); box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.3); }
+        .menu-user-card { margin-top: auto; background: #F8FAFE; border-radius: 16px; padding: 16px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+        .icon-btn#notifBtn, .icon-btn#profileBtn { width: 44px !important; height: 44px !important; border-radius: 50%; }
+        .btn-book { width: 340px !important; height: 58px !important; border-radius: 14px; background-image: url('confirm-static.png') !important; }
+        .btn-book1 { width: 340px !important; height: 33px !important; border-radius: 14px; background-image: url('зб1.png') !important; }
+        .btn-cancel { width: 220px !important; height: 46px !important; border-radius: 12px; background-image: url('cancel-static.png') !important; }
+        .btn-wp { width: 200px !important; height: 46px !important; border-radius: 12px; background-image: url('cabinet-static.png') !important; }
+        .btn-mp { width: 200px !important; height: 46px !important; border-radius: 12px; background-image: url('map-static.png') !important; }
+        .btn-cl { width: 200px !important; height: 46px !important; border-radius: 12px; background-image: url('calendar-static.png') !important; }
+        .btn-ok { width: 240px !important; height: 46px !important; border-radius: 12px; background-image: url('+.png') !important; }
+        .btn-enter { width: 200px !important; height: 30px !important; border-radius: 12px; margin-top: 20px; display: block; background-image: url('enter1.png') !important; }
+        .btn-ex { width: 130px !important; height: 30px !important; border-radius: 12px; margin-top: 20px; display: block; background-image: url('ex1.png') !important; }
+        .btn-mp:hover, .btn-mp:focus { background-image: url('map-hover.gif') !important; }
+        .btn-cl:hover, .btn-cl:focus { background-image: url('calendar-hover.gif') !important; }
+        .btn-wp:hover, .btn-wp:focus { background-image: url('cabinet-hover.gif') !important; }
+        .btn-book:hover { background-image: url('confirm-hover.gif') !important; }
+        .btn-ex:hover { background-image: url('ex2.gif') !important; }
+        .btn-ok:hover { background-image: url('-.gif') !important; }
+        .btn-cancel:hover { background-image: url('cancel-hover.gif') !important; }
+        .btn-book1:hover { background-image: url('зб2.gif') !important; }
+        .icon-btn#notifBtn { background-image: url('notification-static.png') !important; }
+        .icon-btn#profileBtn { background-image: url('пд1.png') !important; }
+        .icon-btn#notifBtn:hover { background-image: url('222.gif') !important; }
+        .icon-btn#profileBtn:hover { background-image: url('1.gif') !important; }
+        .modal-buttons { display: flex !important; flex-direction: column !important; align-items: center !important; gap: 12px !important; margin-top: 24px !important; }
+        .btn-book { order: 1; }
+        .btn-cancel { order: 2; }
+        html, body { font-family: "Attractive-Black", sans-serif; }
+        .menu-nav { display: flex; gap: 12px; }
+        .menu-nav input { display: none; }
+        #menu-map:checked + .btn-mp { background-image: url('map-hover.gif') !important; }
+        #menu-calendar:checked + .btn-cl { background-image: url('calendar-hover.gif') !important; }
+        #menu-profile:checked + .btn-wp { background-image: url('cabinet-hover.gif') !important; }
+        .btn-mp:hover { background-image: url('map-hover.gif') !important; }
+        .btn-cl:hover { background-image: url('calendar-hover.gif') !important; }
+        .btn-wp:hover { background-image: url('cabinet-hover.gif') !important; }
+        @media (max-width: 1200px) { .main-area { padding: 16px; } .map-content { flex-direction: column; } .sidebar { width: 100%; } }
+        @media (max-width: 1000px) { .sidebar-menu { width: 80px; padding: 16px 8px; } .menu-logo-text, .menu-item span:not(.menu-icon), .menu-user-card p, .menu-user-name { display: none; } .menu-item { justify-content: center; } .main-header { flex-direction: column; } }
+    </style>
+</head>
+<body>
+<div class="app-wrapper">
+    <div class="sidebar-menu">
+        <div class="menu-logo">
+            <div class="menu-logo-img" id="menuLogoContainer">IBS</div>
+            <div class="menu-logo-text"><h2>SpaceManage</h2><p>IBS · Умный офис</p></div>
+        </div>
+        <div class="menu-nav">
+            <div class="menu-item btn-mp animated-btn" data-page="map">Карта офиса</div>
+            <div class="menu-item btn-cl animated-btn" data-page="calendar">Календарь</div>
+            <div class="menu-item btn-wp animated-btn" data-page="profile">Личный кабинет</div>
+        </div>
+        <div class="menu-user-card" id="menuUserCard">
+            <div class="menu-user-name" id="menuUserName">Гость</div>
+            <div class="menu-user-email" id="menuUserEmail">Войдите в систему</div>
+            <button class="btn-enter animated-btn" id="menuLoginBtn">Войти</button>
+            <button class="btn-ex animated-btn" id="menuLogoutBtn">Выйти</button>
+        </div>
+    </div>
+    <div class="main-area">
+        <div class="main-header">
+            <div class="logo-area">
+                <div class="logo-img-header" id="headerLogoContainer">IBS</div>
+                <div class="logo-text"><h1>SpaceManage Pro</h1><p>Санкт-Петербург, Английская набережная 70</p></div>
+            </div>
+            <div class="nav-controls">
+                <div class="office-selector"><select id="officeSelect"><option value="spb" selected>Санкт-Петербург</option><option value="msk">Москва — в разработке</option><option value="kazan">Казань — в разработке</option></select></div>
+                <div class="floor-selector"><select id="floorSelect"><option value="5" selected>5 этаж</option><option value="3">3 этаж</option></select></div>
+            </div>
+            <div class="filter-bar">
+                <div class="filter-group"><label>Дата</label><input type="date" id="globalDateFilter"></div>
+                <div class="filter-group"><label>С</label><input type="time" id="globalStartFilter" value="09:00"></div>
+                <div class="filter-group"><label>До</label><input type="time" id="globalEndFilter" value="20:00"></div>
+            </div>
+            <div class="header-actions">
+                <div class="dropdown"><button class="icon-btn animated-btn" id="notifBtn"></button><div class="dropdown-menu" id="notifMenu"><div class="dropdown-header">Уведомления<button id="clearAllNotifBtn" style="background:none;border:none;cursor:pointer;">✖</button></div><div id="notificationsList"></div></div></div>
+                <div class="dropdown"><button class="icon-btn animated-btn" id="profileBtn"></button><div class="dropdown-menu" id="profileMenu"><div class="dropdown-header" id="profileHeader">Профиль</div><div class="dropdown-item" id="viewProfileBtn">Мой профиль</div><div class="dropdown-item" id="loginBtnItem">Войти</div><div class="dropdown-item" id="logoutBtnItem" style="display:none;">Выйти</div></div></div>
+            </div>
+        </div>
+        <div class="stats" id="mainStats">
+            <div class="stat-card">🟢 Свободно <span id="freeCount">0</span></div>
+            <div class="stat-card">🔴 Занято <span id="occupiedCount">0</span></div>
+            <div class="stat-card">Мои брони <span id="myBookingsCount">0</span></div>
+        </div>
+        <div id="mapPage"></div>
+        <div id="calendarPage" class="calendar-view">
+            <div class="calendar-header"><button class="btn btn-secondary" id="prevMonthBtn">◀ Назад</button><h2 id="currentMonthYear"></h2><button class="btn btn-secondary" id="nextMonthBtn">Вперёд ▶</button></div>
+            <div class="calendar-grid" id="calendarGrid"><div class="calendar-weekday">Пн</div><div class="calendar-weekday">Вт</div><div class="calendar-weekday">Ср</div><div class="calendar-weekday">Чт</div><div class="calendar-weekday">Пт</div><div class="calendar-weekday">Сб</div><div class="calendar-weekday">Вс</div></div>
+        </div>
+        <div id="profilePage" class="profile-page">
+            <div class="profile-header"><div class="profile-title">Личный кабинет</div><button class="back-btn" id="backToMapBtn">← На карту</button></div>
+            <div style="margin-bottom:20px; padding:16px; background:#F8FAFE; border-radius:16px;"><strong>Имя:</strong> <span id="profileName">—</span><br><strong>Email:</strong> <span id="profileEmail">—</span></div>
+            <div id="profileBookingsContainer" style="margin-bottom:20px;"><h4>Мои активные бронирования</h4><div id="profileBookingsList"></div></div>
+            <div id="adminPanelContainer"></div>
+        </div>
+    </div>
+</div>
+
+<div id="bookingModal" class="booking-modal"><div class="booking-modal-content"><h3>Бронирование места</h3><div id="modalSelectedSpace">—</div><div class="form-group"><label>Дата</label><input type="date" id="modalBookingDate"></div><div class="form-group"><label>Начало</label><input type="time" id="modalStartTime"></div><div class="form-group"><label>Конец</label><input type="time" id="modalEndTime"></div><div class="form-group"><label>👥 Пригласить участника</label><input type="text" id="inviteUser" placeholder="Имя коллеги"></div><div class="modal-buttons"><button class="btn-cancel animated-btn" id="closeModalBtn">Отмена</button><button class="btn-book animated-btn" id="confirmBookingBtn">Забронировать</button></div></div></div>
+<div class="confirm-popup" id="confirmPopup"><div class="confirm-popup-title">Подтвердите бронирование</div><div id="confirmPopupInfo">—</div><div class="confirm-popup-btns"><button class="btn-cancel animated-btn" id="confirmPopupCancelBtn">Отмена</button><button class="btn-ok animated-btn" id="confirmPopupOkBtn">Подтвердить</button></div></div>
+<div id="editModal" class="booking-modal"><div class="booking-modal-content"><h3>✏️ Редактирование брони</h3><div id="editSelectedSpace">—</div><div class="form-group"><label>Дата</label><input type="date" id="editBookingDate"></div><div class="form-group"><label>Начало</label><input type="time" id="editStartTime"></div><div class="form-group"><label>Конец</label><input type="time" id="editEndTime"></div><div class="form-group"><label>Пригласить</label><input type="text" id="editInviteUser" placeholder="Имя коллеги"></div><div class="modal-buttons"><button class="btn-cancel animated-btn" id="closeEditBtn">Отмена</button><button class="btn-ok animated-btn" id="saveEditBtn">Сохранить</button></div></div></div>
+<div id="authModal" class="booking-modal"><div class="booking-modal-content"><h3>Авторизация</h3><div class="form-group"><input type="text" id="loginName" placeholder="Ваше имя"></div><div class="form-group"><input type="email" id="loginEmail" placeholder="Email"></div><div class="modal-buttons"><button class="btn-secondary" id="closeAuthBtn">Отмена</button><button class="btn-primary" id="doLoginBtn">Войти</button></div></div></div>
+<div id="addObjectModal" class="booking-modal"><div class="booking-modal-content add-object-modal-content"><h3>➕ Добавить объект</h3><div class="form-group"><label>Тип объекта:</label><div class="type-selector" id="objectTypeSelector"><div class="type-option" data-type="chair" data-label="💺" data-name="Рабочее место">💺 Кресло</div><div class="type-option" data-type="toilet" data-label="🚽" data-name="Туалет">🚽 Туалет</div><div class="type-option" data-type="canteen" data-label="☕" data-name="Столовая">☕ Столовая</div><div class="type-option" data-type="meeting_room" data-label="👥" data-name="Переговорная">👥 Переговорная</div><div class="type-option" data-type="playstation" data-label="🎮" data-name="PlayStation">🎮 PlayStation</div><div class="type-option" data-type="tennis" data-label="🏓" data-name="Настольный теннис">🏓 Теннис</div><div class="type-option" data-type="massage" data-label="💆" data-name="Массажное кресло">💆 Массаж</div></div></div><div class="form-group"><label>Название</label><input type="text" id="newObjectName" placeholder="Название"></div><div class="modal-buttons"><button class="btn btn-secondary" id="closeAddModalBtn">Отмена</button><button class="btn btn-primary" id="confirmAddObjectBtn">Добавить</button></div></div></div>
+
+<script>
+// ==============================================
+// ДАННЫЕ КАРТЫ (инфраструктура + кресла + переговорные + зоны отдыха)
+// ==============================================
+const defaultFloorData = {
+    'spb_5': {
+        infra: [
+            { id: 'f5_toilet_top', type: 'toilet', label: 'WC', name: 'Туалет (Верхнее крыло)', desc: 'Санитарная зона', x: 28.5, y: 24.5 },
+            { id: 'f5_canteen_top', type: 'canteen', label: '☕', name: 'Столовая', desc: 'Зона кухни', x: 28.5, y: 34.0 },
+            { id: 'f5_lift', type: 'lift', label: '🛗', name: 'Лифт', desc: 'Лифтовой холл', x: 33.5, y: 82.5 },
+            { id: 'f5_printer', type: 'printer', label: '🖨️', name: 'Принтер', desc: 'МФУ', x: 55.0, y: 25.0 }
+        ],
+        chairs: [
+            { id: 'f5_w1', name: 'Рабочее место А-1', type: 'workspace', desc: 'Стол с ПК', available: true, x: 49.0, y: 17.5 },
+            { id: 'f5_w2', name: 'Рабочее место А-2', type: 'workspace', desc: 'Стол с ПК', available: true, x: 53.0, y: 17.5 },
+            { id: 'f5_w3', name: 'Рабочее место А-3', type: 'workspace', desc: 'Стол с ПК', available: true, x: 49.0, y: 27.0 },
+            { id: 'f5_b1', name: 'Рабочее место Б-1', type: 'workspace', desc: 'Open Space', available: true, x: 24.5, y: 41.5 },
+            { id: 'f5_b2', name: 'Рабочее место Б-2', type: 'workspace', desc: 'Open Space', available: false, x: 29.0, y: 41.5 },
+            { id: 'f5_b3', name: 'Рабочее место Б-3', type: 'workspace', desc: 'Open Space', available: true, x: 33.5, y: 41.5 }
+        ],
+        meetingRooms: [
+            { id: 'f5_meeting_big', name: 'Большая переговорная', desc: 'Вместительная комната до 12 человек', available: true, x: 65.0, y: 45.0, capacity: 12, hasProjector: true, type: 'meeting_room', label: '👥' },
+            { id: 'f5_meeting_small', name: 'Малая переговорная', desc: 'Уютная комната до 6 человек', available: true, x: 72.0, y: 55.0, capacity: 6, hasProjector: false, type: 'meeting_room', label: '👥' }
+        ],
+        recreation: [
+            { id: 'f5_playstation', name: 'PlayStation 5', desc: 'Игровая зона с PS5', available: true, x: 80.0, y: 30.0, type: 'playstation', label: '🎮' },
+            { id: 'f5_tennis', name: 'Настольный теннис', desc: 'Стол для пинг-понга', available: true, x: 20.0, y: 70.0, type: 'tennis', label: '🏓' },
+            { id: 'f5_massage', name: 'Массажное кресло', desc: 'Зона релаксации', available: true, x: 85.0, y: 75.0, type: 'massage', label: '💆' }
+        ]
+    },
+    'spb_3': {
+        infra: [
+            { id: 'f3_toilet_a', type: 'toilet', label: 'WC', name: 'Туалет', desc: 'Санитарная зона', x: 22.0, y: 30.0 }
+        ],
+        chairs: [
+            { id: 'f3_c1', name: 'Зал А — Место 1', type: 'workspace', desc: 'Рабочее место', available: true, x: 45.0, y: 35.0 },
+            { id: 'f3_c2', name: 'Зал А — Место 2', type: 'workspace', desc: 'Рабочее место', available: true, x: 52.0, y: 35.0 },
+            { id: 'f3_c3', name: 'Зал А — Место 3', type: 'workspace', desc: 'Рабочее место', available: false, x: 59.0, y: 35.0 }
+        ],
+        meetingRooms: [
+            { id: 'f3_meeting', name: 'Конференц-зал', desc: 'Большой зал для совещаний', available: true, x: 70.0, y: 25.0, capacity: 20, hasProjector: true, type: 'meeting_room', label: '👥' }
+        ],
+        recreation: [
+            { id: 'f3_playstation', name: 'PlayStation', desc: 'Игровая зона', available: true, x: 15.0, y: 70.0, type: 'playstation', label: '🎮' }
+        ]
+    }
+};
+
+function loadFloorData(floorKey) {
+    const saved = localStorage.getItem(`floor_${floorKey}`);
+    if (saved) return JSON.parse(saved);
+    return JSON.parse(JSON.stringify(defaultFloorData[floorKey] || { infra: [], chairs: [], meetingRooms: [], recreation: [] }));
+}
+function saveFloorData(floorKey, data) { localStorage.setItem(`floor_${floorKey}`, JSON.stringify(data)); }
+
+let currentFloorKey = 'spb_5';
+let infraObjects = [], chairs = [], meetingRooms = [], recreation = [];
+let nextChairId = Date.now(), nextInfraId = Date.now() + 1, nextMeetingId = Date.now() + 2, nextRecId = Date.now() + 3;
+let currentMode = 'view', currentZoom = 1.0;
+const MIN_ZOOM = 1.0, MAX_ZOOM = 2.0;
+let currentPage = 'map', currentCalendarDate = new Date();
+let pendingNewObjectType = null, editingBookingId = null, currentTooltip = null, pendingBookingData = null;
+let currentUser = JSON.parse(localStorage.getItem('officeUser')) || null;
+let bookings = JSON.parse(localStorage.getItem('officeBookings')) || [];
+let notifications = JSON.parse(localStorage.getItem('officeNotifications')) || [];
+let currentSelectedItem = null;
+let employees = JSON.parse(localStorage.getItem('officeEmployees')) || [];
+
+function isRealAdmin() {
+    if (!currentUser) return false;
+    if (currentUser.name === 'Admin' && currentUser.isAdmin === true) return true;
+    const adminInEmployees = employees.find(e => e.name === 'Admin' && e.isAdmin === true);
+    if (adminInEmployees && currentUser.name === 'Admin') return true;
+    return false;
+}
+
+function saveToLocal() {
+    localStorage.setItem('officeBookings', JSON.stringify(bookings));
+    localStorage.setItem('officeUser', JSON.stringify(currentUser));
+    localStorage.setItem('officeNotifications', JSON.stringify(notifications));
+    localStorage.setItem('officeEmployees', JSON.stringify(employees));
+}
+function saveCurrentFloor() { saveFloorData(currentFloorKey, { infra: infraObjects, chairs: chairs, meetingRooms: meetingRooms, recreation: recreation }); }
+function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
+function showToast(msg, isError) { const toast = document.createElement('div'); toast.className = 'toast' + (isError ? ' error' : ''); toast.innerText = msg; document.body.appendChild(toast); setTimeout(() => toast.remove(), 2500); }
+function addNotification(text) { notifications.unshift({ id: Date.now(), text, time: new Date().toLocaleTimeString(), read: false }); if (notifications.length > 30) notifications.pop(); saveToLocal(); updateNotificationsUI(); }
+function updateNotificationsUI() { const c = document.getElementById('notificationsList'); if (!c) return; if (notifications.length === 0) { c.innerHTML = '<div class="dropdown-item" style="color:#94a3b8;">Нет уведомлений</div>'; return; } c.innerHTML = notifications.slice(0,15).map(n => `<div class="dropdown-item"><div>${escapeHtml(n.text)}</div><div style="font-size:0.7rem;color:#888;">${n.time}</div></div>`).join(''); }
+
+function isItemBooked(itemId, itemType, date, start, end) {
+    for (let b of bookings) {
+        if (b.spaceId === itemId && b.date === date && start < b.endTime && end > b.startTime) return b;
+    }
+    return null;
+}
+function getItemAvailability(itemId, isAvailable, date, start, end) {
+    const booking = isItemBooked(itemId, null, date, start, end);
+    return { available: booking ? false : isAvailable, booking };
+}
+
+function getChairAvailability(chair) {
+    const date = document.getElementById('globalDateFilter').value;
+    const start = document.getElementById('globalStartFilter').value;
+    const end = document.getElementById('globalEndFilter').value;
+    return getItemAvailability(chair.id, chair.available, date, start, end);
+}
+function getMeetingRoomAvailability(room) {
+    const date = document.getElementById('globalDateFilter').value;
+    const start = document.getElementById('globalStartFilter').value;
+    const end = document.getElementById('globalEndFilter').value;
+    return getItemAvailability(room.id, room.available, date, start, end);
+}
+function getRecreationAvailability(rec) {
+    const date = document.getElementById('globalDateFilter').value;
+    const start = document.getElementById('globalStartFilter').value;
+    const end = document.getElementById('globalEndFilter').value;
+    return getItemAvailability(rec.id, rec.available, date, start, end);
+}
+
+// Поиск ближайших мест ТОЛЬКО для кресел и переговорных (НЕ для зон отдыха)
+function findNearestSpaces(objX, objY, limit = 3) {
+    const date = document.getElementById('globalDateFilter').value;
+    const start = document.getElementById('globalStartFilter').value;
+    const end = document.getElementById('globalEndFilter').value;
+    const availableChairs = chairs.filter(c => !isItemBooked(c.id, null, date, start, end) && c.available);
+    const availableRooms = meetingRooms.filter(r => !isItemBooked(r.id, null, date, start, end) && r.available);
+    const allSpaces = [...availableChairs.map(s => ({ ...s, spaceType: 'chair', icon: '💺' })), ...availableRooms.map(s => ({ ...s, spaceType: 'meeting_room', icon: '👥' }))];
+    return allSpaces.map(s => ({ ...s, dist: Math.hypot(s.x-objX, s.y-objY) })).sort((a,b)=>a.dist-b.dist).slice(0, limit);
+}
+function highlightNearestSpaces(objX, objY) {
+    document.querySelectorAll('.object-chair, .object-meeting-room').forEach(el => el.classList.remove('chair-highlighted', 'meeting-highlighted'));
+    findNearestSpaces(objX, objY, 3).forEach(space => {
+        const el = document.getElementById(space.id);
+        if (el) {
+            if (space.spaceType === 'chair') el.classList.add('chair-highlighted');
+            else el.classList.add('meeting-highlighted');
+        }
+    });
+}
+
+function showTooltip(element, item, type) {
+    let available, booking;
+    if (type === 'chair') { const res = getChairAvailability(item); available = res.available; booking = res.booking; }
+    else if (type === 'meeting_room') { const res = getMeetingRoomAvailability(item); available = res.available; booking = res.booking; }
+    else { const res = getRecreationAvailability(item); available = res.available; booking = res.booking; }
+    const start = document.getElementById('globalStartFilter').value, end = document.getElementById('globalEndFilter').value;
+    let text = `<strong>${escapeHtml(item.name)}</strong><br>`;
+    if (type === 'meeting_room') text += `👥 ${item.capacity} чел.<br>`;
+    if (!available && booking) text += `🔴 Занято: ${booking.startTime}—${booking.endTime}<br>👤 ${escapeHtml(booking.userName)}`;
+    else text += `🟢 Свободно ${start}—${end}`;
+    if (currentTooltip) currentTooltip.remove();
+    const tt = document.createElement('div'); tt.className = 'tooltip'; tt.innerHTML = text; document.body.appendChild(tt);
+    const rect = element.getBoundingClientRect();
+    tt.style.left = (rect.left + rect.width/2 - tt.offsetWidth/2) + 'px';
+    tt.style.top = (rect.top - tt.offsetHeight - 8) + 'px';
+    currentTooltip = tt;
+}
+function hideTooltip() { if (currentTooltip) { currentTooltip.remove(); currentTooltip = null; } }
+
+function switchFloor(office, floor) {
+    saveCurrentFloor();
+    const newKey = `${office}_${floor}`;
+    currentFloorKey = newKey;
+    const data = loadFloorData(newKey);
+    infraObjects = data.infra || [];
+    chairs = data.chairs || [];
+    meetingRooms = data.meetingRooms || [];
+    recreation = data.recreation || [];
+    currentZoom = 1.0;
+}
+
+function renderAdminPanel() {
+    const container = document.getElementById('adminPanelContainer');
+    if (!container) return;
+    if (!currentUser || !isRealAdmin()) { container.innerHTML = ''; return; }
+    container.innerHTML = `<div class="admin-panel"><h3>🔧 Панель администратора</h3><div class="admin-users-list" id="adminUsersList"></div><div class="admin-add-form"><input type="text" id="newEmpName" placeholder="Имя"><input type="email" id="newEmpEmail" placeholder="Email"><input type="text" id="newEmpPass" placeholder="Пароль"><button class="admin-add-btn" id="addEmployeeBtn">➕ Добавить</button></div></div>`;
+    renderEmployeeList();
+    document.getElementById('addEmployeeBtn')?.addEventListener('click', () => {
+        const name = document.getElementById('newEmpName').value.trim();
+        const email = document.getElementById('newEmpEmail').value.trim();
+        const pass = document.getElementById('newEmpPass').value.trim();
+        if (!name || !email || !pass) { showToast('Заполните все поля', true); return; }
+        if (employees.some(e => e.name === name || e.email === email)) { showToast('Сотрудник уже существует', true); return; }
+        employees.push({ id: Date.now(), name, email, password: pass, isAdmin: false });
+        saveToLocal();
+        renderAdminPanel();
+        showToast(`✅ Сотрудник ${name} добавлен`);
+    });
+}
+function renderEmployeeList() {
+    const list = document.getElementById('adminUsersList');
+    if (!list) return;
+    if (employees.length === 0) { list.innerHTML = '<div style="text-align:center;color:#94a3b8;">Нет сотрудников</div>'; return; }
+    list.innerHTML = employees.map(emp => `<div class="admin-user-item"><div class="admin-user-info"><div class="admin-user-name">${escapeHtml(emp.name)} ${emp.isAdmin ? '👑' : ''}</div><div class="admin-user-email">${escapeHtml(emp.email)}</div><div class="admin-user-pass">🔒 ${escapeHtml(emp.password)}</div></div>${!emp.isAdmin ? `<button class="admin-delete-btn" data-id="${emp.id}">🗑 Удалить</button>` : '<span style="font-size:0.7rem;color:#94a3b8;">Админ</span>'}</div>`).join('');
+    document.querySelectorAll('.admin-delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = parseInt(btn.dataset.id);
+            const toDelete = employees.find(e => e.id === id);
+            if (toDelete && !toDelete.isAdmin && confirm(`Удалить сотрудника ${toDelete.name}?`)) {
+                employees = employees.filter(e => e.id !== id);
+                saveToLocal();
+                renderAdminPanel();
+                showToast(`❌ ${toDelete.name} удалён`);
+            }
+        });
+    });
+}
+
+function renderMap() {
+    const office = document.getElementById('officeSelect').value, floor = document.getElementById('floorSelect').value;
+    const mapContainer = document.getElementById('mapPage');
+    if (office !== 'spb' || !['5','3'].includes(floor)) { mapContainer.innerHTML = `<div class="under-development"><h2>В разработке</h2><p>Карта скоро появится</p></div>`; updateStats(); return; }
+    const newKey = `spb_${floor}`;
+    if (currentFloorKey !== newKey) switchFloor('spb', floor);
+    const imgSrc = floor === '5' ? 'floor5.png' : 'floor3.png';
+    const floorLabels = {'5':'5 этаж — Open Space','3':'3 этаж — Конференц-зал'};
+    mapContainer.innerHTML = `<div class="map-container"><div class="map-header"><div class="map-title">🗺️ ${floorLabels[floor]}</div><div class="zoom-controls"><button class="zoom-btn" id="zoomOutBtn">−</button><span class="zoom-level" id="zoomLevel">${Math.round(currentZoom*100)}%</span><button class="zoom-btn" id="zoomInBtn">+</button><button class="zoom-btn" id="resetZoomBtn">⟳</button></div></div><div class="editor-controls"><button id="viewModeBtn" class="mode-btn ${currentMode==='view'?'mode-btn-active':''}">👁 Просмотр</button><button id="moveModeBtn" class="mode-btn move-btn ${currentMode==='move'?'mode-btn-active':''}">↗️ Перемещать</button><button id="deleteModeBtn" class="mode-btn delete-btn-mode ${currentMode==='delete'?'mode-btn-active':''}">🗑 Удалять</button><button id="addObjectBtn" class="mode-btn add-btn">+ Добавить объект</button><button id="resetMapBtn" class="mode-btn reset-map-btn">⟳ Сброс карты</button></div><div class="map-content"><div class="map-area"><div class="map-wrapper" id="mapWrapper"><div class="map-inner" id="mapInner" style="transform:scale(${currentZoom})">${imgSrc ? `<img src="${imgSrc}" class="office-plan-img">` : `<div class="floor-placeholder"><div class="ph-icon">🏢</div><div class="ph-text">${floorLabels[floor]}</div></div>`}<div id="objectsContainer"></div></div></div></div><div class="sidebar" id="sidebar"><div id="sidebarContent"><div class="empty-state">Нажмите на иконку объекта</div></div></div></div></div>`;
+    document.getElementById('zoomInBtn').onclick = zoomIn; document.getElementById('zoomOutBtn').onclick = zoomOut; document.getElementById('resetZoomBtn').onclick = resetZoom;
+    document.getElementById('viewModeBtn').onclick = () => setMode('view'); document.getElementById('moveModeBtn').onclick = () => setMode('move'); document.getElementById('deleteModeBtn').onclick = () => setMode('delete');
+    document.getElementById('addObjectBtn').onclick = () => { document.querySelectorAll('.type-option').forEach(o=>o.classList.remove('selected')); document.getElementById('newObjectName').value=''; pendingNewObjectType=null; document.getElementById('addObjectModal').classList.add('show'); };
+    document.getElementById('resetMapBtn').onclick = resetMapToDefault;
+    document.getElementById('mapWrapper').addEventListener('wheel', e => { e.preventDefault(); if(e.deltaY<0) zoomIn(); else zoomOut(); }, { passive: false });
+    renderObjects(); updateStats();
+}
+
+function makeDraggable(el, obj) {
+    let dragging=false;
+    el.onmousedown=(e)=>{
+        if(currentMode!=='move') return;
+        e.preventDefault(); e.stopPropagation(); dragging=true; el.style.cursor='grabbing'; document.body.style.userSelect='none';
+        const onMove=(e)=>{
+            if(!dragging) return;
+            const wrap=document.getElementById('mapWrapper'); if(!wrap) return;
+            const rect=wrap.getBoundingClientRect();
+            let px=((e.clientX-rect.left)/rect.width)*100, py=((e.clientY-rect.top)/rect.height)*100;
+            px=Math.min(Math.max(px,2),98); py=Math.min(Math.max(py,2),98);
+            obj.x=px; obj.y=py; el.style.left=px+'%'; el.style.top=py+'%';
+        };
+        const onUp=()=>{ dragging=false; el.style.cursor='grab'; document.body.style.userSelect=''; saveCurrentFloor(); document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp); showToast('Позиция сохранена'); };
+        document.addEventListener('mousemove',onMove); document.addEventListener('mouseup',onUp);
+    };
+}
+
+function renderObjects() {
+    const c = document.getElementById('objectsContainer'); if(!c) return; c.innerHTML='';
+    infraObjects.forEach(obj=>{
+        const el=document.createElement('div'); el.id=obj.id; el.className='map-object object-infra'; el.style.left=obj.x+'%'; el.style.top=obj.y+'%'; el.innerHTML=obj.label; el.title=obj.name;
+        if(currentMode==='view') el.onclick=(e)=>{ e.stopPropagation(); showInfraInfo(obj); highlightNearestSpaces(obj.x,obj.y); };
+        else if(currentMode==='move') makeDraggable(el,obj);
+        else if(currentMode==='delete') el.onclick=(e)=>{ e.stopPropagation(); if(confirm('Удалить объект?')){ infraObjects=infraObjects.filter(i=>i.id!==obj.id); saveCurrentFloor(); renderMap(); showToast('Объект удалён',true); } };
+        c.appendChild(el);
+    });
+    meetingRooms.forEach(room=>{
+        const {available}=getMeetingRoomAvailability(room);
+        const el=document.createElement('div'); el.id=room.id; el.className=`map-object object-meeting-room ${available?'meeting-available':'meeting-occupied'}`; el.style.left=room.x+'%'; el.style.top=room.y+'%'; el.innerHTML=room.label||'👥'; el.title=`${room.name} (${room.capacity} чел.)`;
+        if(currentMode==='view'){
+            el.onclick=(e)=>{ e.stopPropagation(); showMeetingRoomInfo(room); };
+            el.onmouseenter=()=>showTooltip(el,room,'meeting_room'); el.onmouseleave=hideTooltip;
+        } else if(currentMode==='move') makeDraggable(el,room);
+        else if(currentMode==='delete') el.onclick=()=>{ if(confirm(`Удалить ${room.name}?`)){ meetingRooms=meetingRooms.filter(r=>r.id!==room.id); saveCurrentFloor(); renderMap(); showToast('Переговорная удалена',true); } };
+        c.appendChild(el);
+    });
+    recreation.forEach(rec=>{
+        const {available}=getRecreationAvailability(rec);
+        const el=document.createElement('div'); el.id=rec.id; el.className=`map-object object-recreation ${available?'rec-available':'rec-occupied'}`; el.style.left=rec.x+'%'; el.style.top=rec.y+'%'; el.innerHTML=rec.label; el.title=rec.name;
+        if(currentMode==='view'){
+            el.onclick=(e)=>{ e.stopPropagation(); showRecreationInfo(rec); };
+            el.onmouseenter=()=>showTooltip(el,rec,rec.type); el.onmouseleave=hideTooltip;
+        } else if(currentMode==='move') makeDraggable(el,rec);
+        else if(currentMode==='delete') el.onclick=()=>{ if(confirm(`Удалить ${rec.name}?`)){ recreation=recreation.filter(r=>r.id!==rec.id); saveCurrentFloor(); renderMap(); showToast('Зона удалена',true); } };
+        c.appendChild(el);
+    });
+    chairs.forEach(chair=>{
+        const {available}=getChairAvailability(chair);
+        const el=document.createElement('div'); el.id=chair.id; el.className=`map-object object-chair ${available?'chair-available':'chair-occupied'}`; el.style.left=chair.x+'%'; el.style.top=chair.y+'%'; el.title=chair.name;
+        if(currentMode==='view'){
+            el.onclick=()=>{ if(available) openBookingModal(chair, 'chair'); else showToast('Это место уже занято',true); };
+            el.onmouseenter=()=>showTooltip(el,chair,'chair'); el.onmouseleave=hideTooltip;
+        } else if(currentMode==='move') makeDraggable(el,chair);
+        else if(currentMode==='delete') el.onclick=()=>{ if(confirm('Удалить рабочее место?')){ chairs=chairs.filter(c=>c.id!==chair.id); saveCurrentFloor(); renderMap(); showToast('Место удалено',true); } };
+        c.appendChild(el);
+    });
+    updateStats();
+}
+
+function showInfraInfo(obj) {
+    const nearest = findNearestSpaces(obj.x, obj.y, 3);
+    let nearestHtml = nearest.length > 0 ? nearest.map(s => `<li class="nearest-item" onclick="window.openBookingModalFromId('${s.id}', '${s.spaceType}')"><div><strong>${escapeHtml(s.name)}</strong><br><span style="font-size:11px;">${s.spaceType === 'chair' ? '💻 Рабочее место' : '👥 Переговорная'}</span><br><span style="font-size:10px;">📏 ${Math.round(s.dist)}%</span></div><button class="btn-book1 animated-btn">Занять</button></li>`).join('') : '<li class="empty-state">Нет свободных мест</li>';
+    document.getElementById('sidebarContent').innerHTML = `<div class="info-card"><h3>${escapeHtml(obj.name)}</h3><p>${escapeHtml(obj.desc)}</p><p style="font-size:11px;margin-top:8px;">🕐 ${document.getElementById('globalStartFilter').value}—${document.getElementById('globalEndFilter').value}</p></div><div class="nearest-title">Ближайшие свободные места:</div><ul class="nearest-list">${nearestHtml}</ul>`;
+}
+function showMeetingRoomInfo(room) {
+    const {available, booking} = getMeetingRoomAvailability(room);
+    const start = document.getElementById('globalStartFilter').value, end = document.getElementById('globalEndFilter').value;
+    const status = available ? '<span style="color:#2ecc71;">🟢 Свободна</span>' : `<span style="color:#e74c3c;">🔴 Занята (${booking?.startTime}—${booking?.endTime})</span>`;
+    const btn = available ? `<button class="btn-book1 animated-btn" style="margin-top:15px; width:100%;" onclick="openMeetingBookingModal('${room.id}')">Забронировать</button>` : '';
+    document.getElementById('sidebarContent').innerHTML = `<div class="info-card"><h3>👥 ${escapeHtml(room.name)}</h3><p>${escapeHtml(room.desc)}</p><p>👥 Вместимость: ${room.capacity} человек</p><p>📽️ Проектор: ${room.hasProjector ? '✅ есть' : '❌ нет'}</p><p>🕐 ${start}—${end}</p><p>${status}</p>${btn}</div>`;
+}
+function showRecreationInfo(rec) {
+    const {available, booking} = getRecreationAvailability(rec);
+    const start = document.getElementById('globalStartFilter').value, end = document.getElementById('globalEndFilter').value;
+    const status = available ? '<span style="color:#2ecc71;">🟢 Свободно</span>' : `<span style="color:#e74c3c;">🔴 Занято (${booking?.startTime}—${booking?.endTime})</span>`;
+    const btn = available ? `<button class="btn-book1 animated-btn" style="margin-top:15px; width:100%;" onclick="openRecreationBookingModal('${rec.id}')">Забронировать</button>` : '';
+    document.getElementById('sidebarContent').innerHTML = `<div class="info-card"><h3>${rec.label} ${escapeHtml(rec.name)}</h3><p>${escapeHtml(rec.desc)}</p><p>🕐 ${start}—${end}</p><p>${status}</p>${btn}</div>`;
+}
+
+function updateStats() {
+    const date = document.getElementById('globalDateFilter').value, start = document.getElementById('globalStartFilter').value, end = document.getElementById('globalEndFilter').value;
+    let occupied = 0;
+    chairs.forEach(c => { if(isItemBooked(c.id, null, date, start, end)) occupied++; });
+    meetingRooms.forEach(r => { if(isItemBooked(r.id, null, date, start, end)) occupied++; });
+    recreation.forEach(r => { if(isItemBooked(r.id, null, date, start, end)) occupied++; });
+    const total = chairs.length + meetingRooms.length + recreation.length;
+    document.getElementById('freeCount').innerText = total - occupied;
+    document.getElementById('occupiedCount').innerText = occupied;
+    document.getElementById('myBookingsCount').innerText = currentUser ? bookings.filter(b => b.userName === currentUser.name).length : 0;
+    renderProfileBookingsList();
+}
+
+function renderProfileBookingsList() {
+    const div = document.getElementById('profileBookingsList');
+    if(!div) return;
+    if(!currentUser){ div.innerHTML = 'Войдите, чтобы управлять бронями'; return; }
+    const ub = bookings.filter(b => b.userName === currentUser.name);
+    if(ub.length === 0){ div.innerHTML = 'Нет активных броней'; return; }
+    div.innerHTML = ub.map(b => `<div class="booking-item"><div><strong>${escapeHtml(b.spaceName)}</strong><br>${b.date} ${b.startTime}—${b.endTime}${b.invitedUser ? `<br>👥 + ${escapeHtml(b.invitedUser)}` : ''}</div><div class="booking-actions"><button class="btn-edit-booking" onclick="window.editBooking(${b.id})">✏️ Редактировать</button><button class="btn-cancel-booking" onclick="window.cancelBooking(${b.id})">Отменить</button></div></div>`).join('');
+}
+
+function openBookingModal(item, type) {
+    if(!currentUser){ document.getElementById('authModal').classList.add('show'); return; }
+    currentSelectedItem = { id: item.id, name: item.name, type: type };
+    document.getElementById('modalSelectedSpace').innerHTML = '📍 ' + escapeHtml(item.name);
+    document.getElementById('modalBookingDate').value = document.getElementById('globalDateFilter').value;
+    document.getElementById('modalStartTime').value = document.getElementById('globalStartFilter').value;
+    document.getElementById('modalEndTime').value = document.getElementById('globalEndFilter').value;
+    document.getElementById('inviteUser').value = '';
+    document.getElementById('bookingModal').classList.add('show');
+}
+function openMeetingBookingModal(roomId) { const room = meetingRooms.find(r=>r.id===roomId); if(room) openBookingModal(room, 'meeting_room'); }
+function openRecreationBookingModal(recId) { const rec = recreation.find(r=>r.id===recId); if(rec) openBookingModal(rec, rec.type); }
+window.openBookingModalFromId = function(id, type) {
+    if(type === 'chair') { const c = chairs.find(ch=>ch.id===id); if(c) openBookingModal(c, 'chair'); }
+    else if(type === 'meeting_room') { const r = meetingRooms.find(rm=>rm.id===id); if(r) openBookingModal(r, 'meeting_room'); }
+};
+
+document.getElementById('confirmBookingBtn').onclick = () => {
+    if(!currentSelectedItem) return;
+    const date = document.getElementById('modalBookingDate').value, start = document.getElementById('modalStartTime').value, end = document.getElementById('modalEndTime').value, invited = document.getElementById('inviteUser').value.trim();
+    if(!date || !start || !end){ showToast('Заполните все поля', true); return; }
+    if(start >= end){ showToast('Время окончания должно быть позже начала', true); return; }
+    if(isItemBooked(currentSelectedItem.id, null, date, start, end)){ showToast('Это место уже занято', true); return; }
+    pendingBookingData = { item: currentSelectedItem, date, start, end, invited };
+    document.getElementById('bookingModal').classList.remove('show');
+    document.getElementById('confirmPopupInfo').innerHTML = `<strong>${escapeHtml(currentSelectedItem.name)}</strong><br>📅 ${date} · ⏰ ${start}—${end}${invited ? `<br>👥 + ${escapeHtml(invited)}` : ''}`;
+    document.getElementById('confirmPopup').classList.add('show');
+};
+document.getElementById('confirmPopupOkBtn').onclick = () => {
+    if(!pendingBookingData) return;
+    const { item, date, start, end, invited } = pendingBookingData;
+    bookings.push({ id: Date.now(), spaceId: item.id, spaceName: item.name, spaceType: item.type, userName: currentUser.name, date, startTime: start, endTime: end, invitedUser: invited || null, floor: currentFloorKey });
+    saveToLocal(); renderMap(); renderCalendar();
+    document.getElementById('confirmPopup').classList.remove('show');
+    showToast(`✅ ${item.name} забронировано`);
+    addNotification(`Вы забронировали ${item.name} на ${date} ${start}–${end}`);
+    if(invited) addNotification(`Приглашение отправлено: ${invited}`);
+    pendingBookingData = null; currentSelectedItem = null;
+};
+document.getElementById('confirmPopupCancelBtn').onclick = () => {
+    document.getElementById('confirmPopup').classList.remove('show');
+    if(currentSelectedItem) document.getElementById('bookingModal').classList.add('show');
+    pendingBookingData = null;
+};
+document.getElementById('closeModalBtn').onclick = () => { document.getElementById('bookingModal').classList.remove('show'); currentSelectedItem = null; pendingBookingData = null; };
+
+window.editBooking = function(id) {
+    const b = bookings.find(b => b.id == id);
+    if(!b) return;
+    editingBookingId = id;
+    document.getElementById('editSelectedSpace').innerHTML = '📍 ' + escapeHtml(b.spaceName);
+    document.getElementById('editBookingDate').value = b.date;
+    document.getElementById('editStartTime').value = b.startTime;
+    document.getElementById('editEndTime').value = b.endTime;
+    document.getElementById('editInviteUser').value = b.invitedUser || '';
+    document.getElementById('editModal').classList.add('show');
+};
+document.getElementById('saveEditBtn').onclick = () => {
+    if(!editingBookingId) return;
+    const idx = bookings.findIndex(b => b.id == editingBookingId);
+    if(idx === -1) return;
+    const nd = document.getElementById('editBookingDate').value, ns = document.getElementById('editStartTime').value, ne = document.getElementById('editEndTime').value, ni = document.getElementById('editInviteUser').value.trim();
+    if(!nd || !ns || !ne){ showToast('Заполните поля', true); return; }
+    if(ns >= ne){ showToast('Время некорректно', true); return; }
+    const old = bookings[idx];
+    for(let b of bookings){
+        if(b.id != editingBookingId && b.spaceId === old.spaceId && b.date === nd && ns < b.endTime && ne > b.startTime){
+            showToast('Уже занято в это время', true); return;
+        }
+    }
+    bookings[idx] = { ...old, date: nd, startTime: ns, endTime: ne, invitedUser: ni || null };
+    saveToLocal(); renderMap(); renderCalendar();
+    document.getElementById('editModal').classList.remove('show');
+    showToast('✅ Бронирование обновлено');
+    addNotification(`Бронь ${old.spaceName} изменена на ${nd} ${ns}–${ne}`);
+    editingBookingId = null;
+};
+document.getElementById('closeEditBtn').onclick = () => document.getElementById('editModal').classList.remove('show');
+window.cancelBooking = function(id) {
+    const b = bookings.find(b => b.id == id);
+    if(b && confirm(`Отменить бронь "${b.spaceName}"?`)){ bookings = bookings.filter(b => b.id != id); saveToLocal(); renderMap(); renderCalendar(); showToast('Бронь отменена'); addNotification(`Бронь ${b.spaceName} отменена`); }
+};
+
+// Добавление объектов
+document.addEventListener('click', (e) => {
+    const opt = e.target.closest('.type-option');
+    if(opt && document.getElementById('addObjectModal').classList.contains('show')){
+        document.querySelectorAll('.type-option').forEach(o=>o.classList.remove('selected'));
+        opt.classList.add('selected');
+        pendingNewObjectType = { type: opt.dataset.type, label: opt.dataset.label, defaultName: opt.dataset.name };
+    }
+});
+document.getElementById('confirmAddObjectBtn').onclick = () => {
+    if(!pendingNewObjectType){ showToast('Выберите тип объекта', true); return; }
+    const name = document.getElementById('newObjectName').value.trim();
+    const newId = `${pendingNewObjectType.type}_${Date.now()}`;
+    if(pendingNewObjectType.type === 'chair'){
+        chairs.push({ id: newId, name: name || `Новое место ${chairs.length+1}`, type: 'workspace', desc: 'Новое рабочее место', available: true, x: 50, y: 50 });
+        showToast('➕ Добавлено рабочее место');
+    } else if(pendingNewObjectType.type === 'meeting_room'){
+        meetingRooms.push({ id: newId, name: name || 'Новая переговорная', desc: 'Переговорная', available: true, x: 50, y: 50, capacity: 8, hasProjector: true, type: 'meeting_room', label: '👥' });
+        showToast('➕ Добавлена переговорная');
+    } else if(['playstation', 'tennis', 'massage'].includes(pendingNewObjectType.type)){
+        recreation.push({ id: newId, name: name || pendingNewObjectType.defaultName || 'Зона отдыха', desc: 'Зона отдыха', available: true, x: 50, y: 50, type: pendingNewObjectType.type, label: pendingNewObjectType.label });
+        showToast(`➕ Добавлена зона: ${name || pendingNewObjectType.defaultName}`);
+    } else {
+        infraObjects.push({ id: newId, type: pendingNewObjectType.type, label: pendingNewObjectType.label, name: name || pendingNewObjectType.defaultName || 'Новый объект', desc: 'Объект инфраструктуры', x: 50, y: 50 });
+        showToast(`➕ Добавлен: ${name || pendingNewObjectType.defaultName}`);
+    }
+    saveCurrentFloor(); renderMap();
+    document.getElementById('addObjectModal').classList.remove('show');
+    pendingNewObjectType = null;
+};
+document.getElementById('closeAddModalBtn').onclick = () => { document.getElementById('addObjectModal').classList.remove('show'); pendingNewObjectType = null; };
+
+function resetMapToDefault() {
+    if(confirm('⚠️ Сбросить карту к исходному состоянию?')){
+        const def = defaultFloorData[currentFloorKey];
+        if(def){ infraObjects = JSON.parse(JSON.stringify(def.infra || [])); chairs = JSON.parse(JSON.stringify(def.chairs || [])); meetingRooms = JSON.parse(JSON.stringify(def.meetingRooms || [])); recreation = JSON.parse(JSON.stringify(def.recreation || [])); saveCurrentFloor(); renderMap(); showToast('🔄 Карта сброшена'); }
+    }
+}
+function setMode(mode){ currentMode = mode; renderMap(); }
+function zoomIn(){ if(currentZoom < MAX_ZOOM){ currentZoom = Math.min(+(currentZoom + 0.1).toFixed(1), MAX_ZOOM); updateZoomDisplay(); } }
+function zoomOut(){ if(currentZoom > MIN_ZOOM){ currentZoom = Math.max(+(currentZoom - 0.1).toFixed(1), MIN_ZOOM); updateZoomDisplay(); } }
+function resetZoom(){ currentZoom = 1.0; updateZoomDisplay(); const w = document.getElementById('mapWrapper'); if(w){ w.scrollLeft = 0; w.scrollTop = 0; } showToast('Масштаб сброшен'); }
+function updateZoomDisplay(){ const inner = document.getElementById('mapInner'); if(inner) inner.style.transform = `scale(${currentZoom})`; const lvl = document.getElementById('zoomLevel'); if(lvl) lvl.innerText = Math.round(currentZoom * 100) + '%'; }
+
+// Календарь с выбором брони
+function renderCalendar() {
+    const year = currentCalendarDate.getFullYear(), month = currentCalendarDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startWeekday = (firstDay.getDay() + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const grid = document.getElementById('calendarGrid'); if(!grid) return;
+    while(grid.children.length > 7) grid.removeChild(grid.lastChild);
+    for(let i = 0; i < startWeekday; i++){ const empty = document.createElement('div'); empty.className = 'calendar-day'; empty.style.background = 'transparent'; grid.appendChild(empty); }
+    for(let d = 1; d <= daysInMonth; d++){
+        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const dayBookings = bookings.filter(b => b.date === dateStr && (currentUser ? b.userName === currentUser.name : false));
+        const div = document.createElement('div'); div.className = 'calendar-day';
+        const bookingDots = dayBookings.map(() => `<div class="booking-dot"></div>`).join('');
+        div.innerHTML = `<div class="calendar-day-number">${d}</div>${bookingDots}${dayBookings.length > 0 ? '<div class="event-badge">📌</div>' : ''}`;
+        div.onclick = () => {
+            if(dayBookings.length === 0){
+                alert(`📅 Нет броней на ${dateStr}`);
+            } else if(dayBookings.length === 1){
+                openBookingEditFromCalendar(dayBookings[0]);
+            } else {
+                let selectHtml = '<div style="margin-bottom:15px;"><select id="bookingSelect" style="width:100%; padding:10px; border-radius:12px; border:1px solid #CBD5E0;">';
+                dayBookings.forEach(b => { selectHtml += `<option value="${b.id}">${escapeHtml(b.spaceName)} (${b.startTime}—${b.endTime})</option>`; });
+                selectHtml += '</select></div>';
+                const modalContent = document.createElement('div');
+                modalContent.className = 'booking-modal-content';
+                modalContent.innerHTML = `<h3>📋 Бронирования на ${dateStr}</h3>${selectHtml}<div class="modal-buttons"><button class="btn btn-secondary" id="calendarSelectCancelBtn">Отмена</button><button class="btn btn-primary" id="calendarSelectOkBtn">Выбрать</button></div>`;
+                const tempModal = document.createElement('div'); tempModal.className = 'booking-modal show'; tempModal.style.display = 'flex'; tempModal.appendChild(modalContent);
+                document.body.appendChild(tempModal);
+                document.getElementById('calendarSelectOkBtn').onclick = () => {
+                    const selectedId = parseInt(document.getElementById('bookingSelect').value);
+                    const selectedBooking = dayBookings.find(b => b.id === selectedId);
+                    if(selectedBooking) openBookingEditFromCalendar(selectedBooking);
+                    tempModal.remove();
+                };
+                document.getElementById('calendarSelectCancelBtn').onclick = () => tempModal.remove();
+            }
+        };
+        grid.appendChild(div);
+    }
+    document.getElementById('currentMonthYear').innerText = firstDay.toLocaleString('ru', { month: 'long', year: 'numeric' });
+}
+function openBookingEditFromCalendar(booking) {
+    editingBookingId = booking.id;
+    document.getElementById('editSelectedSpace').innerHTML = '📍 ' + escapeHtml(booking.spaceName);
+    document.getElementById('editBookingDate').value = booking.date;
+    document.getElementById('editStartTime').value = booking.startTime;
+    document.getElementById('editEndTime').value = booking.endTime;
+    document.getElementById('editInviteUser').value = booking.invitedUser || '';
+    document.getElementById('editModal').classList.add('show');
+}
+
+function switchPage(page) {
+    currentPage = page;
+    document.getElementById('mapPage').style.display = page === 'map' ? 'block' : 'none';
+    document.getElementById('calendarPage').classList.toggle('show', page === 'calendar');
+    document.getElementById('profilePage').classList.toggle('show', page === 'profile');
+    document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+    const active = document.querySelector(`[data-page="${page}"]`);
+    if(active) active.classList.add('active');
+    if(page === 'calendar') renderCalendar();
+    if(page === 'profile'){
+        document.getElementById('profileName').innerText = currentUser?.name || '—';
+        document.getElementById('profileEmail').innerText = currentUser?.email || '—';
+        renderProfileBookingsList();
+        renderAdminPanel();
+    }
+}
+function updateAuthUI() {
+    document.getElementById('menuUserName').innerText = currentUser?.name || 'Гость';
+    document.getElementById('menuUserEmail').innerText = currentUser?.email || 'Войдите в систему';
+    document.getElementById('menuLoginBtn').style.display = currentUser ? 'none' : 'block';
+    document.getElementById('menuLogoutBtn').style.display = currentUser ? 'block' : 'none';
+    const header = document.getElementById('profileHeader'), loginBtn = document.getElementById('loginBtnItem'), logoutBtn = document.getElementById('logoutBtnItem');
+    if(currentUser){ 
+        header.innerHTML = '👤 ' + escapeHtml(currentUser.name) + (isRealAdmin() ? ' (Админ)' : '');
+        loginBtn.style.display = 'none'; logoutBtn.style.display = 'flex'; 
+    } else { header.innerHTML = 'Профиль'; loginBtn.style.display = 'flex'; logoutBtn.style.display = 'none'; }
+    updateStats(); renderAdminPanel();
+}
+
+document.getElementById('menuLoginBtn').onclick = () => document.getElementById('authModal').classList.add('show');
+document.getElementById('menuLogoutBtn').onclick = () => { currentUser = null; saveToLocal(); localStorage.removeItem('officeUser_already_logged'); showToast('Вы вышли'); setTimeout(()=>window.location.href='greeting.html',800); };
+document.getElementById('loginBtnItem').onclick = () => document.getElementById('authModal').classList.add('show');
+document.getElementById('logoutBtnItem').onclick = () => { currentUser = null; saveToLocal(); localStorage.removeItem('officeUser_already_logged'); showToast('Вы вышли'); setTimeout(()=>window.location.href='greeting.html',800); };
+document.getElementById('doLoginBtn').onclick = () => {
+    const name = document.getElementById('loginName').value.trim();
+    const email = document.getElementById('loginEmail').value.trim();
+    if(!name){ showToast('Введите имя', true); return; }
+    if(name === 'Admin' && email === 'admin@ibs.ru'){
+        currentUser = { name: 'Admin', email: 'admin@ibs.ru', isAdmin: true };
+        if(!employees.some(e => e.name === 'Admin')){ employees.push({ id: 1, name: 'Admin', email: 'admin@ibs.ru', password: '1234', isAdmin: true }); }
+        saveToLocal();
+        document.getElementById('authModal').classList.remove('show'); updateAuthUI(); showToast(`Добро пожаловать, администратор ${name}!`);
+        renderMap(); renderCalendar(); renderAdminPanel();
+    } else {
+        currentUser = { name, email: email || `${name.toLowerCase()}@ibs.ru`, isAdmin: false };
+        if(!employees.some(e => e.name === name)){ employees.push({ id: Date.now(), name, email: email || `${name.toLowerCase()}@ibs.ru`, password: 'user123', isAdmin: false }); saveToLocal(); }
+        document.getElementById('authModal').classList.remove('show'); updateAuthUI(); showToast(`Добро пожаловать, ${name}!`);
+        renderMap(); renderCalendar(); renderAdminPanel();
+    }
+};
+document.getElementById('closeAuthBtn').onclick = () => document.getElementById('authModal').classList.remove('show');
+document.getElementById('viewProfileBtn').onclick = () => { document.querySelectorAll('.dropdown-menu').forEach(m=>m.classList.remove('show')); switchPage('profile'); };
+document.getElementById('backToMapBtn').onclick = () => switchPage('map');
+
+function setupDropdown(btnId,menuId){ const btn=document.getElementById(btnId), menu=document.getElementById(menuId); if(btn&&menu) btn.onclick=(e)=>{ e.stopPropagation(); document.querySelectorAll('.dropdown-menu').forEach(m=>m.classList.remove('show')); menu.classList.toggle('show'); }; }
+setupDropdown('notifBtn','notifMenu'); setupDropdown('profileBtn','profileMenu');
+document.addEventListener('click',()=>document.querySelectorAll('.dropdown-menu').forEach(m=>m.classList.remove('show')));
+document.getElementById('clearAllNotifBtn')?.addEventListener('click',()=>{ notifications=[]; saveToLocal(); updateNotificationsUI(); showToast('Уведомления очищены'); });
+
+document.getElementById('globalDateFilter').valueAsDate = new Date();
+document.getElementById('globalDateFilter').addEventListener('change',()=>{ renderMap(); renderCalendar(); });
+document.getElementById('globalStartFilter').addEventListener('change',()=>renderMap());
+document.getElementById('globalEndFilter').addEventListener('change',()=>renderMap());
+document.getElementById('officeSelect').addEventListener('change',()=>renderMap());
+document.getElementById('floorSelect').addEventListener('change',()=>renderMap());
+document.querySelectorAll('.menu-item').forEach(el=>el.addEventListener('click',()=>switchPage(el.dataset.page)));
+document.getElementById('prevMonthBtn').onclick = () => { currentCalendarDate.setMonth(currentCalendarDate.getMonth()-1); renderCalendar(); };
+document.getElementById('nextMonthBtn').onclick = () => { currentCalendarDate.setMonth(currentCalendarDate.getMonth()+1); renderCalendar(); };
+
+updateAuthUI(); updateNotificationsUI(); renderMap(); switchPage('map');
+
+const ibsLogoImg = new Image();
+ibsLogoImg.onload = function(){
+    const ml = document.getElementById('menuLogoContainer');
+    if(ml){ ml.innerHTML = ''; ml.style.background = 'transparent'; const img = document.createElement('img'); img.src = 'ibs-logo.png'; img.style.cssText = 'width:44px;height:44px;object-fit:contain;border-radius:12px;'; ml.appendChild(img); }
+    const hl = document.getElementById('headerLogoContainer');
+    if(hl){ hl.innerHTML = ''; hl.style.background = 'transparent'; const img2 = document.createElement('img'); img2.src = 'ibs-logo.png'; img2.style.cssText = 'width:48px;height:48px;object-fit:contain;border-radius:14px;'; hl.appendChild(img2); }
+};
+(function autoLogin(){ const saved = localStorage.getItem('officeUser'); if(saved && !window.currentUser && !localStorage.getItem('officeUser_already_logged')){ try{ const user = JSON.parse(saved); window.currentUser = user; localStorage.setItem('officeUser_already_logged','true'); updateAuthUI(); renderMap(); renderCalendar(); setTimeout(()=>showToast(`Добро пожаловать, ${user.name}!`),500); }catch(e){} } })();
+ibsLogoImg.src = 'ibs-logo.png';
+</script>
+</body>
+</html>

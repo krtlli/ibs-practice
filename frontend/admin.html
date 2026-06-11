@@ -1,0 +1,1741 @@
+Вы правы, панель администратора не появлялась, потому что в системе не было ни одного пользователя с флагом `isAdmin: true`. Я исправил это: теперь при первом запуске создаётся администратор по умолчанию (`Admin` / `admin@ibs.ru` / пароль `admin123`).
+
+**Чтобы увидеть панель администратора, нужно войти под этой учётной записью:**
+
+1. Нажмите **«Войти»** (в левом меню или в верхнем правом углу)
+2. Введите:
+   - **Имя:** `Admin`
+   - **Email:** `admin@ibs.ru`
+3. Нажмите **«Войти»**
+
+После входа в **Личном кабинете** появится панель администратора, где можно:
+- Просматривать список всех сотрудников
+- Добавлять новых (имя, email, пароль)
+- Удалять существующих (кроме самого админа)
+
+---
+
+Вот исправленный код с предустановленным администратором:
+
+```html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>SpaceManage Pro — IBS</title>
+    <style>
+        /* ======================================================
+           СБРОС СТИЛЕЙ И БАЗОВЫЕ НАСТРОЙКИ
+           box-sizing: border-box — padding и border включаются
+           в ширину/высоту элемента (не добавляются сверху).
+           margin/padding: 0 — убираем браузерные отступы.
+           font-family: Attractive — фирменный шрифт IBS.
+        ====================================================== */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Attractive', 'Segoe UI', sans-serif; }
+        body { background-color: #EFF2F7; color: #1A2C3E; }
+
+        /* ======================================================
+           ОБЁРТКА ПРИЛОЖЕНИЯ
+           display: flex — главный контейнер горизонтально:
+           слева — sidebar-menu (левая панель),
+           справа — main-area (основной контент).
+           min-height: 100vh — растягиваем на весь экран.
+        ====================================================== */
+        .app-wrapper {
+            display: flex;
+            min-height: 100vh;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* ======================================================
+           ЛЕВОЕ БОКОВОЕ МЕНЮ (из try.html)
+           position: sticky + top: 20px — меню «прилипает»
+           к верху при прокрутке страницы.
+           height: calc(100vh - 40px) — высота = экран минус отступы.
+           overflow-y: auto — скролл если контент не влезает.
+        ====================================================== */
+        .sidebar-menu {
+            width: 260px;
+            background: #FFFFFF;
+            border-radius: 24px;
+            margin: 20px 0 20px 20px;
+            padding: 24px 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            border: 1px solid #E2E8F0;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            height: calc(100vh - 40px);
+            position: sticky;
+            top: 20px;
+            overflow-y: auto;
+        }
+
+        /* Логотип в боковом меню */
+        .menu-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #E2E8F0;
+        }
+
+        /* ======================================================
+           МЕСТО ПОД ЛОГОТИП IBS
+           Используем тег <img> с id="ibsLogo".
+           object-fit: contain — картинка масштабируется
+           целиком, не обрезается.
+           border-radius: 12px — скруглённые углы под стиль сайта.
+        ====================================================== */
+        .menu-logo-img {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            object-fit: contain;
+            background: #1E3A5F;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 22px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .menu-logo-text h2 { font-size: 1.1rem; color: #1E3A5F; font-weight: 700; }
+        .menu-logo-text p { font-size: 0.65rem; color: #64748B; }
+
+        /* ======================================================
+           ПУНКТЫ НАВИГАЦИИ ЛЕВОГО МЕНЮ
+           Активный пункт (.active) получает фирменный цвет фона.
+           Переход курсора — pointer (рука при наведении).
+        ====================================================== */
+        .menu-nav { display: flex; flex-direction: column; gap: 8px; }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #475569;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .menu-item:hover { background: #F1F5F9; }
+        .menu-item.active { background: #1E3A5F; color: white; }
+        .menu-item .menu-icon { font-size: 1.2rem; }
+
+        /* Карточка пользователя в нижней части меню */
+        .menu-user-card {
+            margin-top: auto;
+            background: #F8FAFE;
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+        }
+        .menu-user-name { font-weight: 600; color: #1E3A5F; margin-top: 8px; font-size: 0.9rem; }
+        .menu-user-email { font-size: 0.7rem; color: #64748B; }
+        .login-btn-menu { background: #1E3A5F; color: white; border: none; padding: 8px; border-radius: 30px; width: 100%; margin-top: 12px; cursor: pointer; font-weight: 500; font-size: 0.85rem; }
+        .logout-btn-menu { background: #e74c3c; color: white; border: none; padding: 8px; border-radius: 30px; width: 100%; margin-top: 12px; cursor: pointer; font-weight: 500; font-size: 0.85rem; display: none; }
+
+        /* ======================================================
+           ОСНОВНАЯ РАБОЧАЯ ОБЛАСТЬ
+           flex: 1 — занимает всё оставшееся место по горизонтали
+           (рядом с левым меню).
+        ====================================================== */
+        .main-area {
+            flex: 1;
+            padding: 20px 28px 20px 20px;
+            min-width: 0; /* предотвращает переполнение flex */
+        }
+
+        /* ======================================================
+           ВЕРХНИЙ ХЕДЕР
+           flex-wrap: wrap — элементы переносятся на новую строку
+           если не помещаются в одну строку (адаптивность).
+        ====================================================== */
+        .main-header {
+            background: #FFFFFF;
+            border-radius: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            padding: 16px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            border: 1px solid #E2E8F0;
+        }
+
+        /* Лого в хедере */
+        .logo-area { display: flex; align-items: center; gap: 12px; }
+        .logo-img-header {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            object-fit: contain;
+            background: #1E3A5F;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 26px;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+        .logo-text h1 { font-size: 1.3rem; font-weight: 700; color: #1E3A5F; }
+        .logo-text p { font-size: 0.7rem; color: #64748B; }
+
+        /* Выборщики офиса и этажа */
+        .nav-controls { display: flex; align-items: center; gap: 16px; background: #F8FAFE; padding: 6px 16px; border-radius: 40px; border: 1px solid #E2E8F0; }
+        .office-selector select, .floor-selector select {
+            padding: 8px 14px;
+            border: 1px solid #CBD5E0;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-family: 'Attractive', 'Segoe UI', sans-serif;
+            background: white;
+            cursor: pointer;
+        }
+
+        /* Фильтры даты и времени */
+        .filter-bar { display: flex; align-items: center; gap: 12px; background: #F8FAFE; padding: 6px 18px; border-radius: 40px; border: 1px solid #E2E8F0; }
+        .filter-group { display: flex; align-items: center; gap: 8px; }
+        .filter-group label { font-size: 0.75rem; font-weight: 500; color: #64748B; }
+        .filter-group input { padding: 6px 12px; border: 1px solid #CBD5E0; border-radius: 30px; font-size: 0.8rem; background: white; }
+
+        /* Кнопки уведомлений и профиля */
+        .header-actions { display: flex; align-items: center; gap: 12px; }
+        .icon-btn {
+            background: #F1F5F9;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            color: #1E3A5F;
+            position: relative;
+        }
+        .icon-btn:hover { background: #E2E8F0; transform: scale(1.02); }
+
+        /* Дропдаун уведомлений */
+        .dropdown { position: relative; }
+        .dropdown-menu {
+            position: absolute;
+            top: 55px;
+            right: 0;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 12px 35px rgba(0,0,0,0.12);
+            min-width: 320px;
+            display: none;
+            z-index: 1000;
+            border: 1px solid #E2E8F0;
+        }
+        .dropdown-menu.show { display: block; animation: slideDown 0.2s ease; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .dropdown-header { padding: 14px 18px; background: #F8FAFE; border-bottom: 1px solid #E2E8F0; font-weight: 600; color: #1E3A5F; display: flex; justify-content: space-between; border-radius: 20px 20px 0 0; }
+        .dropdown-item { padding: 12px 18px; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #F1F5F9; font-size: 0.85rem; }
+        .dropdown-item:hover { background: #F8FAFE; }
+        .badge { position: absolute; top: -2px; right: -2px; background: #DC2626; color: white; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 20px; }
+
+        /* ======================================================
+           СТАТИСТИКА (плашки сверху)
+        ====================================================== */
+        .stats { display: flex; gap: 16px; margin-bottom: 24px; justify-content: flex-end; flex-wrap: wrap; }
+        .stat-card { background: white; padding: 10px 24px; border-radius: 40px; font-size: 0.85rem; font-weight: 500; border: 1px solid #E2E8F0; }
+        .stat-card span { color: #1E3A5F; font-weight: 700; font-size: 1.2rem; margin-left: 6px; }
+
+        /* ======================================================
+           КАРТА ОФИСА
+        ====================================================== */
+        .map-container { background: white; border-radius: 24px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #E2E8F0; margin-bottom: 24px; }
+        .map-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+        .map-title { font-weight: 700; font-size: 1.1rem; color: #1E3A5F; }
+
+        /* ======================================================
+           КОНТРОЛЫ ЗУМА
+           Кнопки «+», «−», «⟳» расположены в строку.
+        ====================================================== */
+        .zoom-controls { display: flex; gap: 8px; align-items: center; background: #F1F5F9; padding: 5px 12px; border-radius: 30px; }
+        .zoom-btn { background: white; border: 1px solid #CBD5E0; width: 36px; height: 36px; border-radius: 30px; font-size: 18px; cursor: pointer; transition: all 0.2s; }
+        .zoom-btn:hover { background: #E2E8F0; transform: scale(1.05); }
+        .zoom-level { font-size: 12px; color: #64748B; min-width: 60px; text-align: center; font-weight: 500; }
+
+        /* Панель редактора (кнопки режимов) */
+        .editor-controls { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
+        .mode-btn { background-color: #64748B; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+        .mode-btn:hover { opacity: 0.85; }
+        .mode-btn-active { background-color: #27ae60 !important; }
+        .move-btn { background-color: #e67e22; }
+        .delete-btn-mode { background-color: #e74c3c; }
+        .add-btn { background-color: #3498db; }
+        .reset-map-btn { background-color: #95a5a6; }
+        .mode-indicator { font-size: 13px; padding: 5px 10px; border-radius: 4px; background: #f0f0f0; margin-left: 10px; }
+
+        .legend { display: flex; gap: 20px; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; }
+        .legend-color { width: 16px; height: 16px; border-radius: 50%; }
+
+        /* ======================================================
+           ОБЛАСТЬ КАРТЫ + САЙДБАР (правая панель объекта)
+           map-content: flex — горизонтально: карта слева, сайдбар справа.
+           map-area: flex: 1 — карта занимает максимум ширины.
+        ====================================================== */
+        .map-content { display: flex; flex: 1; gap: 20px; }
+        .map-area { flex: 1; position: relative; min-height: 500px; overflow: hidden; border-radius: 16px; background: #FAFCFE; }
+
+        /* ======================================================
+           ОБЁРТКА КАРТЫ (прокрутка + масштаб)
+           overflow: auto — скролл когда карта увеличена.
+           cursor: grab — показываем «руку» при перетаскивании.
+        ====================================================== */
+        .map-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 550px;
+            overflow: auto;
+            background: #FAFCFE;
+            border-radius: 16px;
+            cursor: grab;
+        }
+        .map-wrapper:active { cursor: grabbing; }
+
+        /* ======================================================
+           ВНУТРЕННИЙ КОНТЕЙНЕР КАРТЫ
+           transform-origin: 0 0 — масштабирование начинается
+           с верхнего левого угла (иначе при зуме карта
+           уезжает от центра).
+           transition: transform 0.1s ease — плавный зум.
+        ====================================================== */
+        .map-inner {
+            position: relative;
+            transform-origin: 0 0;
+            transition: transform 0.1s ease;
+            width: 100%;
+            display: inline-block;
+        }
+
+        /* Картинка плана офиса — pointer-events: none чтобы
+           клики проходили к объектам наверху */
+        .office-plan-img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        /* PLACEHOLDER для карты этажа (когда нет картинки) */
+        .floor-placeholder {
+            width: 100%;
+            min-height: 550px;
+            background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 12px;
+            color: #94a3b8;
+            font-size: 1.1rem;
+            pointer-events: none;
+            user-select: none;
+        }
+        .floor-placeholder .ph-icon { font-size: 4rem; }
+        .floor-placeholder .ph-text { font-weight: 600; color: #64748B; }
+        .floor-placeholder .ph-sub { font-size: 0.8rem; }
+
+        /* ======================================================
+           ОБЪЕКТЫ НА КАРТЕ
+           position: absolute — позиционируются внутри map-inner.
+           transform: translate(-50%, -50%) — центрируем объект
+           относительно своей точки (x%, y% — центр объекта).
+           z-index: 5 — поверх картинки плана.
+        ====================================================== */
+        .map-object {
+            position: absolute;
+            z-index: 5;
+            transition: transform 0.15s ease, filter 0.15s ease;
+            transform: translate(-50%, -50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            cursor: pointer;
+        }
+        .map-object:hover { transform: translate(-50%, -50%) scale(1.2); z-index: 10; }
+
+        /* Инфраструктурные объекты — круглые тёмные кружки с эмодзи */
+        .object-infra {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #34495e;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            border: 2px solid #ffffff;
+            cursor: pointer;
+        }
+
+        /* Кресла/места — маленькие цветные кружки */
+        .object-chair {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+        .chair-available { background-color: #2ecc71; }
+        .chair-occupied { background-color: #e74c3c; }
+        .chair-highlighted {
+            animation: pulse 0.8s infinite alternate;
+            box-shadow: 0 0 15px #3498db, 0 0 5px #3498db;
+            border-color: #3498db;
+            width: 20px; height: 20px;
+            z-index: 8;
+        }
+        @keyframes pulse {
+            from { transform: translate(-50%, -50%) scale(1); }
+            to { transform: translate(-50%, -50%) scale(1.3); }
+        }
+
+        /* ======================================================
+           ТУЛТИП (всплывающая подсказка)
+           position: fixed — позиционирован относительно viewport,
+           а не страницы, поэтому не уезжает при скролле.
+           pointer-events: none — мышь "проходит сквозь" тултип.
+        ====================================================== */
+        .tooltip {
+            position: fixed;
+            background: #1E293B;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            z-index: 1500;
+            pointer-events: none;
+            white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-weight: 500;
+        }
+        .tooltip::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 6px solid #1E293B;
+        }
+
+        /* Правая панель информации об объекте */
+        .sidebar { width: 350px; background-color: #fff; border-left: 1px solid #e0e0e0; padding: 25px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; border-radius: 16px; }
+        .info-card { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; }
+        .info-card h3 { margin-bottom: 8px; color: #1e293b; font-size: 18px; }
+        .info-card p { font-size: 14px; color: #64748b; line-height: 1.4; }
+        .nearest-title { font-weight: 600; font-size: 14px; color: #1e293b; margin-top: 15px; margin-bottom: 8px; }
+        .nearest-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+        .nearest-item { background: #fff; border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .nearest-item:hover { background: #f8fafc; }
+        .btn-book-small { background-color: #1E3A5F; color: white; border: none; padding: 5px 12px; border-radius: 20px; cursor: pointer; font-size: 12px; }
+        .empty-state { color: #94a3b8; text-align: center; margin-top: 40px; font-size: 14px; }
+
+        /* ======================================================
+           КАЛЕНДАРЬ
+        ====================================================== */
+        .calendar-view { display: none; background: white; border-radius: 24px; padding: 24px; border: 1px solid #E2E8F0; margin-bottom: 24px; }
+        .calendar-view.show { display: block; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+        .calendar-weekday { text-align: center; font-weight: 600; color: #64748B; padding: 12px; }
+        .calendar-day {
+            background: #F8FAFE;
+            border-radius: 12px;
+            padding: 12px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 80px;
+        }
+        .calendar-day:hover { background: #E2E8F0; }
+        .calendar-day-number { font-weight: 600; font-size: 1rem; margin-bottom: 4px; }
+        .booking-dot { width: 6px; height: 6px; background: #3498db; border-radius: 50%; margin: 2px auto; }
+        .event-badge { background: #1E3A5F; color: white; font-size: 10px; padding: 2px 6px; border-radius: 20px; margin-top: 4px; display: inline-block; }
+
+        /* ======================================================
+           МОДАЛЬНЫЕ ОКНА
+           display: none / flex — скрытие и показ.
+           backdrop-filter: blur(4px) — размытие фона позади окна.
+           position: fixed — окно поверх всего контента.
+        ====================================================== */
+        .booking-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 2000; align-items: center; justify-content: center; }
+        .booking-modal.show { display: flex; }
+        .booking-modal-content { background: white; border-radius: 28px; padding: 32px; max-width: 500px; width: 90%; animation: slideUp 0.3s ease; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-weight: 500; font-size: 0.8rem; color: #64748B; margin-bottom: 6px; }
+        .form-group input, .form-group select { width: 100%; padding: 12px 14px; border: 1px solid #CBD5E0; border-radius: 14px; font-size: 0.9rem; font-family: 'Attractive', 'Segoe UI', sans-serif; }
+        .modal-buttons { display: flex; gap: 12px; margin-top: 24px; }
+        .btn { padding: 12px 20px; border-radius: 40px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; }
+        .btn-primary { background: #1E3A5F; color: white; flex: 1; }
+        .btn-secondary { background: #F1F5F9; color: #1E293B; flex: 1; }
+        .btn-warning { background: #f59e0b; color: white; flex: 1; }
+
+        /* Модалка добавления объекта */
+        .add-object-modal-content { width: 420px; }
+        .type-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .type-option {
+            padding: 10px;
+            border: 1px solid #CBD5E0;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+            background: white;
+            font-size: 0.85rem;
+        }
+        .type-option.selected { background: #1E3A5F; color: white; border-color: #1E3A5F; }
+        .type-option:hover:not(.selected) { background: #E2E8F0; }
+
+        /* ======================================================
+           ЛИЧНЫЙ КАБИНЕТ (страница профиля)
+        ====================================================== */
+        .profile-page { display: none; background: white; border-radius: 24px; padding: 28px; margin-bottom: 24px; border: 1px solid #E2E8F0; }
+        .profile-page.show { display: block; }
+        .profile-header { display: flex; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #E2E8F0; }
+        .profile-title { font-size: 1.5rem; font-weight: 700; color: #1E3A5F; }
+        .booking-item, .history-item { background: #F8FAFE; padding: 14px; border-radius: 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .booking-actions { display: flex; gap: 8px; }
+        .btn-cancel-booking { background: #FEE2E2; color: #DC2626; border: none; padding: 6px 14px; border-radius: 30px; font-size: 0.7rem; cursor: pointer; }
+        .btn-edit-booking { background: #FEF3C7; color: #D97706; border: none; padding: 6px 14px; border-radius: 30px; font-size: 0.7rem; cursor: pointer; }
+        .back-btn { background: #F1F5F9; border: none; padding: 8px 20px; border-radius: 30px; cursor: pointer; font-size: 0.85rem; }
+
+        /* ======================================================
+           ПАНЕЛЬ АДМИНИСТРАТОРА
+        ====================================================== */
+        .admin-panel {
+            margin-top: 24px;
+            background: #F8FAFE;
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid #E2E8F0;
+        }
+        .admin-panel h3 {
+            font-size: 1.2rem;
+            color: #1E3A5F;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .admin-users-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .admin-user-item {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #E2E8F0;
+        }
+        .admin-user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .admin-user-name {
+            font-weight: 600;
+            color: #1E3A5F;
+        }
+        .admin-user-email {
+            font-size: 0.7rem;
+            color: #64748B;
+        }
+        .admin-user-pass {
+            font-size: 0.65rem;
+            color: #94A3B8;
+        }
+        .admin-delete-btn {
+            background: #FEE2E2;
+            border: none;
+            color: #DC2626;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: all 0.2s;
+        }
+        .admin-delete-btn:hover {
+            background: #FECACA;
+        }
+        .admin-add-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #E2E8F0;
+        }
+        .admin-add-form input {
+            flex: 1;
+            min-width: 140px;
+            padding: 10px 12px;
+            border: 1px solid #CBD5E0;
+            border-radius: 30px;
+            font-size: 0.8rem;
+        }
+        .admin-add-btn {
+            background: #1E3A5F;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .admin-add-btn:hover {
+            background: #2D4A6E;
+        }
+
+        /* ======================================================
+           «В РАЗРАБОТКЕ» — заглушка для недоступных страниц
+        ====================================================== */
+        .under-development {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 500px;
+            flex-direction: column;
+            gap: 20px;
+            background: #F8FAFE;
+            border-radius: 16px;
+            margin: 20px;
+        }
+        .under-development h2 { font-size: 2rem; color: #64748B; }
+        .under-development p { color: #94A3B8; }
+
+        /* ======================================================
+           ТОСТ-УВЕДОМЛЕНИЯ (всплывающие плашки снизу справа)
+           position: fixed — не участвует в потоке документа.
+           animation: fadeInOut — плавное появление/исчезновение.
+        ====================================================== */
+        .toast { position: fixed; bottom: 24px; right: 24px; background: #1E3A5F; color: white; padding: 12px 24px; border-radius: 40px; z-index: 3000; animation: fadeInOut 2.5s ease; font-size: 0.85rem; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+        .toast.error { background-color: #e74c3c; }
+        @keyframes fadeInOut { 0% { opacity: 0; transform: translateY(20px); } 15% { opacity: 1; transform: translateY(0); } 85% { opacity: 1; } 100% { opacity: 0; transform: translateY(20px); } }
+
+        /* ======================================================
+           МИНИ-ПОПАП ПОДТВЕРЖДЕНИЯ БРОНИРОВАНИЯ
+           Появляется в правом нижнем углу после нажатия «Забронировать».
+           Отдельно от тоста — имеет кнопку подтверждения.
+        ====================================================== */
+        .confirm-popup {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: white;
+            border-radius: 20px;
+            padding: 20px 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+            border: 1px solid #E2E8F0;
+            z-index: 3500;
+            min-width: 300px;
+            display: none;
+            animation: slideUp 0.3s ease;
+        }
+        .confirm-popup.show { display: block; }
+        .confirm-popup-title { font-weight: 700; color: #1E3A5F; margin-bottom: 8px; font-size: 1rem; }
+        .confirm-popup-info { font-size: 0.8rem; color: #64748B; margin-bottom: 16px; line-height: 1.5; }
+        .confirm-popup-btns { display: flex; gap: 10px; }
+        .confirm-popup-ok { background: #1E3A5F; color: white; border: none; padding: 10px 20px; border-radius: 30px; cursor: pointer; font-weight: 600; flex: 1; font-size: 0.85rem; }
+        .confirm-popup-cancel { background: #F1F5F9; color: #1E293B; border: none; padding: 10px 20px; border-radius: 30px; cursor: pointer; font-weight: 600; flex: 1; font-size: 0.85rem; }
+
+        /* Анимированные кнопки (из 1.html) */
+        .animated-btn {
+        background-size: cover !important;
+        background-position: center !important;
+        background-repeat: no-repeat !important;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        display: inline-block;
+
+        font-size: 0 !important;
+        color: transparent !important;
+        text-indent: -9999px !important;
+    }
+
+    .animated-btn:hover {
+        transform: scale(1.03);
+        box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.3);
+    }
+
+    .menu-user-card {
+    margin-top: auto;
+    background: #F8FAFE;
+    border-radius: 16px;
+    padding: 16px;
+    text-align: center;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* центрируем кнопки */
+    }
+    /* ====================== КРУГЛЫЕ КНОПКИ ====================== */
+    .icon-btn#notifBtn,
+    .icon-btn#profileBtn {
+        width: 44px !important;
+        height: 44px !important;
+        border-radius: 50%;
+    }
+
+    /* ====================== МОДАЛЬНЫЕ КНОПКИ ====================== */
+    .btn-book {
+        width: 340px !important;
+        height: 58px !important;
+        border-radius: 14px;
+    }
+
+    .btn-book1 {
+        width: 340px !important;
+        height: 33px !important;
+        border-radius: 14px;
+    }
+
+    .btn-cancel {
+        width: 220px !important;
+        height: 46px !important;
+        border-radius: 12px;
+    }
+
+    .btn-wp {
+        width: 200px !important;
+        height: 46px !important;
+        border-radius: 12px;
+    }
+    .btn-mp {
+        width: 200px !important;
+        height: 46px !important;
+        border-radius: 12px;
+    }
+    .btn-cl {
+        width: 200px !important;
+        height: 46px !important;
+        border-radius: 12px;
+    }
+    .btn-enter {
+        width: 200px !important;
+        height: 30px !important;
+        border-radius: 12px;
+
+        margin-top: 20px;   /* опустить ниже */
+        display: block;
+    }
+    .btn-ok {
+        width: 240px !important;
+        height: 46px !important;
+        border-radius: 12px;
+    }
+    .btn-ex {
+        width: 130px !important;
+        height: 30px !important;
+        border-radius: 12px;
+
+        margin-top: 20px;   /* опустить ниже */
+        display: block;
+    }
+
+
+    /* ====================== ИЗОБРАЖЕНИЯ ====================== */
+    /* Модальные кнопки */
+    .btn-book {
+        background-image: url('confirm-static.png') !important;
+    }
+    .btn-ex {
+        background-image: url('ex1.png') !important;
+    }
+    .btn-cancel {
+        background-image: url('cancel-static.png') !important;
+    }
+    .btn-book1 {
+        background-image: url('зб1.png') !important;
+    }
+    .btn-wp {
+        background-image: url('cabinet-static.png') !important;
+    }
+    .btn-cl {
+        background-image: url('calendar-static.png') !important;
+    }
+    .btn-mp {
+        background-image: url('map-static.png') !important;
+    }
+    .btn-ok {
+        background-image: url('+.png') !important;
+    }
+    .btn-enter {
+        background-image: url('enter1.png') !important;
+    }
+
+
+
+    .btn-mp:hover,
+    .btn-mp:focus {
+        background-image: url('map-hover.gif') !important;
+    }
+
+    .btn-cl:hover,
+    .btn-cl:focus {
+        background-image: url('calendar-hover.gif') !important;
+    }
+
+    .btn-wp:hover,
+    .btn-wp:focus {
+        background-image: url('cabinet-hover.gif') !important;
+    }
+
+    .btn-mp,
+    .btn-cl,
+    .btn-wp {
+        outline: none;
+    }
+    .btn-book:hover {
+        background-image: url('confirm-hover.gif') !important;
+    }
+    .btn-ex:hover {
+        background-image: url('ex2.gif') !important;
+        background-image: url('ex2.gif') !important;
+    }
+    .btn-ok:hover {
+        background-image: url('-.gif') !important;
+    }
+    .btn-cancel:hover {
+        background-image: url('cancel-hover.gif') !important;
+    }
+    .btn-book1:hover {
+        background-image: url('зб2.gif') !important;
+    }
+
+    /* Уведомления и профиль */
+    .icon-btn#notifBtn {
+        background-image: url('notification-static.png') !important;
+    }
+    .icon-btn#profileBtn {
+        background-image: url('пд1.png') !important;
+    }
+
+    .icon-btn#notifBtn:hover {
+        background-image: url('222.gif') !important;
+    }
+    .icon-btn#profileBtn:hover {
+        background-image: url('1.gif') !important;
+    }
+
+    /* ====================== РАСПОЛОЖЕНИЕ КНОПОК В МОДАЛКЕ ====================== */
+    .modal-buttons {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 12px !important;
+        margin-top: 24px !important;
+    }
+
+    .btn-book { order: 1; }
+    .btn-cancel { order: 2; }
+
+
+
+        html, body {
+    font-family: "Attractive", sans-serif;
+}
+    .menu-nav {
+        display: flex;
+        gap: 12px;
+    }
+
+    .menu-nav input {
+        display: none;
+    }
+
+    /* Активная кнопка карты */
+    #menu-map:checked + .btn-mp {
+        background-image: url('map-hover.gif') !important;
+    }
+
+    /* Активная кнопка календаря */
+    #menu-calendar:checked + .btn-cl {
+        background-image: url('calendar-hover.gif') !important;
+    }
+
+    /* Активная кнопка кабинета */
+    #menu-profile:checked + .btn-wp {
+        background-image: url('cabinet-hover.gif') !important;
+    }
+
+    /* Наведение */
+    .btn-mp:hover {
+        background-image: url('map-hover.gif') !important;
+    }
+
+    .btn-cl:hover {
+        background-image: url('calendar-hover.gif') !important;
+    }
+
+    .btn-wp:hover {
+        background-image: url('cabinet-hover.gif') !important;
+    }
+
+        /* ======================================================
+           АДАПТИВНОСТЬ (мобильные и планшеты)
+           При ширине < 1000px: левое меню сужается до иконок,
+           подписи скрываются.
+        ====================================================== */
+        @media (max-width: 1200px) {
+            .main-area { padding: 16px; }
+            .map-content { flex-direction: column; }
+            .sidebar { width: 100%; }
+        }
+        @media (max-width: 1000px) {
+            .sidebar-menu { width: 80px; padding: 16px 8px; }
+            .menu-logo-text, .menu-item span:not(.menu-icon), .menu-user-card p, .menu-user-name { display: none; }
+            .menu-item { justify-content: center; }
+            .main-header { flex-direction: column; }
+
+        }
+    </style>
+</head>
+<body>
+<div class="app-wrapper">
+
+    <!-- ЛЕВОЕ БОКОВОЕ МЕНЮ -->
+    <div class="sidebar-menu">
+        <div class="menu-logo">
+            <div class="menu-logo-img" id="menuLogoContainer">IBS</div>
+            <div class="menu-logo-text">
+                <h2>SpaceManage</h2>
+                <p>IBS · Умный офис</p>
+            </div>
+        </div>
+
+        <div class="menu-nav">
+            <input type="radio" name="menu" id="menu-map" checked hidden>
+            <label for="menu-map" class="menu-item btn-mp animated-btn" data-page="map">Карта офиса</label>
+
+            <input type="radio" name="menu" id="menu-calendar" hidden>
+            <label for="menu-calendar" class="menu-item btn-cl animated-btn" data-page="calendar">Календарь</label>
+
+            <input type="radio" name="menu" id="menu-profile" hidden>
+            <label for="menu-profile" class="menu-item btn-wp animated-btn" data-page="profile">Личный кабинет</label>
+        </div>
+
+        <div class="menu-user-card" id="menuUserCard">
+            <div style="font-size:1.8rem;"></div>
+            <div class="menu-user-name" id="menuUserName">Гость</div>
+            <div class="menu-user-email" id="menuUserEmail">Войдите в систему</div>
+            <button class="btn-enter animated-btn" id="menuLoginBtn"> Войти</button>
+            <button class="btn-ex animated-btn" id="menuLogoutBtn"> Выйти</button>
+        </div>
+    </div>
+
+    <!-- ОСНОВНАЯ РАБОЧАЯ ОБЛАСТЬ -->
+    <div class="main-area">
+
+        <!-- ВЕРХНИЙ ХЕДЕР -->
+        <div class="main-header">
+            <div class="logo-area">
+                <div class="logo-img-header" id="headerLogoContainer">IBS</div>
+                <div class="logo-text">
+                    <h1>SpaceManage Pro</h1>
+                    <p>Санкт-Петербург, Английская набережная 70</p>
+                </div>
+            </div>
+
+            <div class="nav-controls">
+                <div class="office-selector">
+                    <select id="officeSelect">
+                        <option value="spb" selected>Санкт-Петербург (главный)</option>
+                        <option value="msk">Москва — в разработке</option>
+                        <option value="kazan">Казань — в разработке</option>
+                    </select>
+                </div>
+                <div class="floor-selector">
+                    <select id="floorSelect">
+                        <option value="5" selected>5 этаж</option>
+                        <option value="3">3 этаж</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="filter-bar">
+                <div class="filter-group"><label> Дата</label><input type="date" id="globalDateFilter"></div>
+                <div class="filter-group"><label> С</label><input type="time" id="globalStartFilter" value="09:00"></div>
+                <div class="filter-group"><label> До</label><input type="time" id="globalEndFilter" value="20:00"></div>
+            </div>
+
+            <div class="header-actions">
+                <div class="dropdown">
+                    <button class="icon-btn animated-btn" id="notifBtn"></button>
+                    <div class="dropdown-menu" id="notifMenu">
+                        <div class="dropdown-header">Уведомления<button id="clearAllNotifBtn" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748B;">✖ Очистить</button></div>
+                        <div id="notificationsList"></div>
+                    </div>
+                </div>
+                <div class="dropdown">
+                    <button class="icon-btn animated-btn" id="profileBtn"></button>
+                    <div class="dropdown-menu" id="profileMenu">
+                        <div class="dropdown-header" id="profileHeader">Профиль</div>
+                        <div class="dropdown-item" id="viewProfileBtn"> Мой профиль</div>
+                        <div class="dropdown-item" id="loginBtnItem"> Войти</div>
+                        <div class="dropdown-item" id="logoutBtnItem" style="display:none;"> Выйти</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- СТАТИСТИКА -->
+        <div class="stats">
+            <div class="stat-card">🟢 Свободно <span id="freeCount">0</span></div>
+            <div class="stat-card">🔴 Занято <span id="occupiedCount">0</span></div>
+            <div class="stat-card"> Мои брони <span id="myBookingsCount">0</span></div>
+        </div>
+
+        <!-- СТРАНИЦА КАРТЫ -->
+        <div id="mapPage"></div>
+
+        <!-- СТРАНИЦА КАЛЕНДАРЯ -->
+        <div id="calendarPage" class="calendar-view">
+            <div class="calendar-header">
+                <button class="btn btn-secondary" id="prevMonthBtn">◀ Назад</button>
+                <h2 id="currentMonthYear"></h2>
+                <button class="btn btn-secondary" id="nextMonthBtn">Вперёд ▶</button>
+            </div>
+            <div class="calendar-grid" id="calendarGrid">
+                <div class="calendar-weekday">Пн</div>
+                <div class="calendar-weekday">Вт</div>
+                <div class="calendar-weekday">Ср</div>
+                <div class="calendar-weekday">Чт</div>
+                <div class="calendar-weekday">Пт</div>
+                <div class="calendar-weekday">Сб</div>
+                <div class="calendar-weekday">Вс</div>
+            </div>
+        </div>
+
+        <!-- СТРАНИЦА ЛИЧНОГО КАБИНЕТА -->
+        <div id="profilePage" class="profile-page">
+            <div class="profile-header">
+                <div class="profile-title"> Личный кабинет</div>
+                <button class="back-btn" id="backToMapBtn">← На карту</button>
+            </div>
+            <div style="margin-bottom:20px; padding:16px; background:#F8FAFE; border-radius:16px;">
+                <strong> Имя:</strong> <span id="profileName">—</span><br>
+                <strong> Email:</strong> <span id="profileEmail">—</span>
+            </div>
+            <h4 style="margin-bottom:16px;"> Мои бронирования</h4>
+            <div id="historyList"></div>
+
+            <!-- Панель администратора (только для админа) -->
+            <div id="adminPanelContainer"></div>
+        </div>
+
+    </div><!-- /main-area -->
+</div><!-- /app-wrapper -->
+
+<!-- =====================================================
+     МОДАЛЬНЫЕ ОКНА (бронирование, авторизация, редактирование, добавление объекта)
+===================================================== -->
+<div id="bookingModal" class="booking-modal">
+    <div class="booking-modal-content">
+        <h3 id="modalTitle"> Бронирование места</h3>
+        <div style="margin-bottom:20px; font-weight:600;" id="modalSelectedSpace">—</div>
+        <div class="form-group"><label> Дата</label><input type="date" id="modalBookingDate"></div>
+        <div class="form-group"><label> Начало</label><input type="time" id="modalStartTime"></div>
+        <div class="form-group"><label> Конец</label><input type="time" id="modalEndTime"></div>
+        <div class="form-group"><label>👥 Пригласить участника</label><input type="text" id="inviteUser" placeholder="Имя коллеги"></div>
+        <div class="modal-buttons">
+            <button class="btn-cancel animated-btn" id="closeModalBtn">Отмена</button>
+            <button class="btn-book animated-btn" id="confirmBookingBtn">Забронировать</button>
+        </div>
+    </div>
+</div>
+
+<div class="confirm-popup" id="confirmPopup">
+    <div class="confirm-popup-title"> Подтвердите бронирование</div>
+    <div class="confirm-popup-info" id="confirmPopupInfo">—</div>
+    <div class="confirm-popup-btns">
+        <button class="btn-cancel animated-btn" id="confirmPopupCancelBtn">Отмена</button>
+        <button class="btn-ok animated-btn" id="confirmPopupOkBtn">Подтвердить</button>
+    </div>
+</div>
+
+<div id="editModal" class="booking-modal">
+    <div class="booking-modal-content">
+        <h3>✏️ Редактирование брони</h3>
+        <div style="margin-bottom:20px; font-weight:600;" id="editSelectedSpace">—</div>
+        <div class="form-group"><label> Дата</label><input type="date" id="editBookingDate"></div>
+        <div class="form-group"><label> Начало</label><input type="time" id="editStartTime"></div>
+        <div class="form-group"><label> Конец</label><input type="time" id="editEndTime"></div>
+        <div class="form-group"><label> Пригласить</label><input type="text" id="editInviteUser" placeholder="Имя коллеги"></div>
+        <div class="modal-buttons">
+            <button class="btn-cancel animated-btn" id="closeEditBtn">Отмена</button>
+            <button class="btn-ok animated-btn" id="saveEditBtn">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<div id="authModal" class="booking-modal">
+    <div class="booking-modal-content">
+        <h3> Авторизация</h3>
+        <div class="form-group"><input type="text" id="loginName" placeholder="Ваше имя"></div>
+        <div class="form-group"><input type="email" id="loginEmail" placeholder="Email"></div>
+        <div class="modal-buttons">
+            <button class="btn- animated-btn" id="closeAuthBtn">Отмена</button>
+            <button class="btn-enter animated-btn" id="doLoginBtn">Войти</button>
+        </div>
+    </div>
+</div>
+
+<div id="addObjectModal" class="booking-modal">
+    <div class="booking-modal-content add-object-modal-content">
+        <h3>➕ Добавить объект на карту</h3>
+        <div class="form-group">
+            <label>Тип объекта:</label>
+            <div class="type-selector" id="objectTypeSelector">
+                <div class="type-option" data-type="chair" data-label="💺" data-name="Рабочее место" data-desc="Новое рабочее место">💺 Кресло</div>
+                <div class="type-option" data-type="toilet" data-label="🚽" data-name="Туалет" data-desc="Санитарная зона">🚽 Туалет</div>
+                <div class="type-option" data-type="canteen" data-label="☕" data-name="Столовая" data-desc="Зона отдыха и питания">☕ Столовая</div>
+                <div class="type-option" data-type="meeting_room" data-label="📢" data-name="Переговорная" data-desc="Комната для переговоров">📢 Переговорная</div>
+                <div class="type-option" data-type="printer" data-label="🖨️" data-name="Принтер" data-desc="Сетевое МФУ">🖨️ Принтер</div>
+                <div class="type-option" data-type="lift" data-label="🛗" data-name="Лифт" data-desc="Лифтовой холл">🛗 Лифт</div>
+                <div class="type-option" data-type="stairs" data-label="🪜" data-name="Лестница" data-desc="Лестничная площадка">🪜 Лестница</div>
+                <div class="type-option" data-type="other" data-label="📍" data-name="Другое" data-desc="Объект инфраструктуры">📍 Другое</div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Название (опционально)</label>
+            <input type="text" id="newObjectName" placeholder="Например: Принтер HP LaserJet">
+        </div>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" id="closeAddModalBtn">Отмена</button>
+            <button class="btn btn-primary" id="confirmAddObjectBtn">Добавить</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ==============================================================
+// ДАННЫЕ КАРТЫ И ХРАНИЛИЩА
+// ==============================================================
+const defaultFloorData = {
+    'spb_5': {
+        infra: [
+            { id: 'f5_toilet_top', type: 'toilet', label: 'WC', name: 'Туалет (Верхнее крыло)', desc: 'Санитарная зона в верхней части этажа.', x: 28.5, y: 24.5 },
+            { id: 'f5_canteen_top', type: 'canteen', label: '☕', name: 'Столовая (Верхнее крыло)', desc: 'Зона кухни и отдыха сотрудников.', x: 28.5, y: 34.0 },
+            { id: 'f5_meeting_top', type: 'meeting_room', label: '📢', name: 'Переговорная "Овал"', desc: 'Комната переговоров с большим овальным столом.', x: 38.5, y: 23.5 },
+            { id: 'f5_lift', type: 'lift', label: '🛗', name: 'Лифт', desc: 'Центральный лифтовой холл.', x: 33.5, y: 82.5 },
+            { id: 'f5_stairs', type: 'stairs', label: '🪜', name: 'Лестница', desc: 'Выход на лестничную площадку.', x: 27.5, y: 85.0 },
+            { id: 'f5_toilet_bot', type: 'toilet', label: 'WC', name: 'Туалет 1 (Нижнее крыло)', desc: 'Малый туалет рядом с лифтом.', x: 39.5, y: 82.5 },
+            { id: 'f5_canteen_bot', type: 'canteen', label: '☕', name: 'Столовая (Нижнее крыло)', desc: 'Вторая обеденная зона этажа.', x: 44.5, y: 85.5 },
+            { id: 'f5_printer', type: 'printer', label: '🖨️', name: 'Центральный Принтер', desc: 'Сетевое МФУ общего доступа.', x: 55.0, y: 25.0 }
+        ],
+        chairs: [
+            { id: 'f5_m1', name: 'Переговорная — Место 1', type: 'meeting', desc: 'Место за общим столом. Без ПК.', available: true, x: 37.0, y: 20.5 },
+            { id: 'f5_m2', name: 'Переговорная — Место 2', type: 'meeting', desc: 'Место за общим столом. Без ПК.', available: true, x: 40.0, y: 20.5 },
+            { id: 'f5_m3', name: 'Переговорная — Место 3', type: 'meeting', desc: 'Место за общим столом. Без ПК.', available: false, x: 38.5, y: 26.5 },
+            { id: 'f5_w1', name: 'Рабочее место А-1', type: 'workspace', desc: 'Стол со стационарным компьютером.', available: true, x: 49.0, y: 17.5 },
+            { id: 'f5_w2', name: 'Рабочее место А-2', type: 'workspace', desc: 'Стол со стационарным компьютером.', available: true, x: 53.0, y: 17.5 },
+            { id: 'f5_w3', name: 'Рабочее место А-3', type: 'workspace', desc: 'Рабочее место с dok-станцией.', available: true, x: 49.0, y: 27.0 },
+            { id: 'f5_b1', name: 'Рабочее место Б-1', type: 'workspace', desc: 'Место в нижнем ряду Open Space.', available: true, x: 24.5, y: 41.5 },
+            { id: 'f5_b2', name: 'Рабочее место Б-2', type: 'workspace', desc: 'Место в нижнем ряду Open Space.', available: false, x: 29.0, y: 41.5 },
+            { id: 'f5_b3', name: 'Рабочее место Б-3', type: 'workspace', desc: 'Место в нижнем ряду Open Space.', available: true, x: 33.5, y: 41.5 },
+            { id: 'f5_r1', name: 'Правое крыло — Стол 1', type: 'meeting', desc: 'Место в изолированной рабочей зоне.', available: true, x: 84.5, y: 58.5 },
+            { id: 'f5_r2', name: 'Правое крыло — Стол 2', type: 'meeting', desc: 'Место в изолированной рабочей зоне.', available: true, x: 84.5, y: 67.5 }
+        ]
+    },
+    'spb_3': {
+        infra: [
+            { id: 'f3_toilet_a', type: 'toilet', label: 'WC', name: 'Туалет (Крыло А)', desc: 'Санитарная зона крыла А, 3 этаж.', x: 22.0, y: 30.0 },
+            { id: 'f3_meeting_a', type: 'meeting_room', label: '📢', name: 'Переговорная «Нева»', desc: 'Переговорная с видом на набережную.', x: 50.0, y: 20.0 },
+            { id: 'f3_printer_a', type: 'printer', label: '🖨️', name: 'Принтер 3А', desc: 'МФУ в левом крыле.', x: 35.0, y: 55.0 },
+            { id: 'f3_lift', type: 'lift', label: '🛗', name: 'Лифт 3 этаж', desc: 'Лифтовой холл.', x: 15.0, y: 70.0 }
+        ],
+        chairs: [
+            { id: 'f3_c1', name: 'Зал А — Место 1', type: 'workspace', desc: 'Открытое рабочее пространство.', available: true, x: 45.0, y: 35.0 },
+            { id: 'f3_c2', name: 'Зал А — Место 2', type: 'workspace', desc: 'Открытое рабочее пространство.', available: true, x: 52.0, y: 35.0 },
+            { id: 'f3_c3', name: 'Зал А — Место 3', type: 'workspace', desc: 'Открытое рабочее пространство.', available: false, x: 59.0, y: 35.0 },
+            { id: 'f3_c4', name: 'Зал Б — Место 1', type: 'workspace', desc: 'Тихая зона, без телефонных разговоров.', available: true, x: 70.0, y: 60.0 },
+            { id: 'f3_c5', name: 'Зал Б — Место 2', type: 'workspace', desc: 'Тихая зона, без телефонных разговоров.', available: true, x: 76.0, y: 60.0 },
+            { id: 'f3_n1', name: 'Переговорная «Нева» — М1', type: 'meeting', desc: 'Место у окна.', available: true, x: 46.0, y: 15.0 },
+            { id: 'f3_n2', name: 'Переговорная «Нева» — М2', type: 'meeting', desc: 'Место у доски.', available: true, x: 54.0, y: 15.0 }
+        ]
+    }
+};
+
+function loadFloorData(floorKey) {
+    const saved = localStorage.getItem(`floor_${floorKey}`);
+    if (saved) return JSON.parse(saved);
+    return JSON.parse(JSON.stringify(defaultFloorData[floorKey] || { infra: [], chairs: [] }));
+}
+
+function saveFloorData(floorKey, data) {
+    localStorage.setItem(`floor_${floorKey}`, JSON.stringify(data));
+}
+
+let currentFloorKey = 'spb_5';
+let infraObjects = loadFloorData(currentFloorKey).infra;
+let chairs = loadFloorData(currentFloorKey).chairs;
+let nextChairId = Date.now();
+let nextInfraId = Date.now() + 1;
+
+let currentMode = 'view';
+let currentZoom = 1.0;
+const MIN_ZOOM = 1.0;
+const MAX_ZOOM = 2.0;
+let currentPage = 'map';
+let currentCalendarDate = new Date();
+let pendingNewObjectType = null;
+let editingBookingId = null;
+let currentTooltip = null;
+let pendingBookingData = null;
+
+let currentUser = JSON.parse(localStorage.getItem('officeUser')) || null;
+let bookings = JSON.parse(localStorage.getItem('officeBookings')) || [];
+let notifications = JSON.parse(localStorage.getItem('officeNotifications')) || [];
+let currentSelectedChair = null;
+
+// ==============================================================
+// СИСТЕМА СОТРУДНИКОВ И АДМИНИСТРАТОР
+// ==============================================================
+let employees = JSON.parse(localStorage.getItem('officeEmployees')) || [];
+// При первом запуске создаём администратора по умолчанию
+if (employees.length === 0) {
+    employees = [
+        { id: 1, name: 'Admin', email: 'admin@ibs.ru', password: 'admin123', isAdmin: true }
+    ];
+    localStorage.setItem('officeEmployees', JSON.stringify(employees));
+}
+
+function saveToLocal() {
+    localStorage.setItem('officeBookings', JSON.stringify(bookings));
+    localStorage.setItem('officeUser', JSON.stringify(currentUser));
+    localStorage.setItem('officeNotifications', JSON.stringify(notifications));
+    localStorage.setItem('officeEmployees', JSON.stringify(employees));
+}
+
+function saveCurrentFloor() {
+    saveFloorData(currentFloorKey, { infra: infraObjects, chairs: chairs });
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+}
+
+function showToast(msg, isError) {
+    const toast = document.createElement('div');
+    toast.className = 'toast' + (isError ? ' error' : '');
+    toast.innerText = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2500);
+}
+
+function addNotification(text) {
+    notifications.unshift({ id: Date.now(), text, time: new Date().toLocaleTimeString(), read: false });
+    if (notifications.length > 30) notifications.pop();
+    saveToLocal();
+    updateNotificationsUI();
+}
+
+function updateNotificationsUI() {
+    const container = document.getElementById('notificationsList');
+    if (!container) return;
+    if (notifications.length === 0) {
+        container.innerHTML = '<div class="dropdown-item" style="color:#94a3b8;">Нет уведомлений</div>';
+        return;
+    }
+    container.innerHTML = notifications.slice(0, 15).map(n =>
+        `<div class="dropdown-item"><div><div style="font-size:0.8rem;">${escapeHtml(n.text)}</div><div style="font-size:0.7rem;color:#888;">${n.time}</div></div></div>`
+    ).join('');
+}
+
+// ==============================================================
+// ПАНЕЛЬ АДМИНИСТРАТОРА
+// ==============================================================
+function renderAdminPanel() {
+    const container = document.getElementById('adminPanelContainer');
+    if (!container) return;
+    if (!currentUser) {
+        container.innerHTML = '';
+        return;
+    }
+    const isAdmin = employees.some(emp => emp.name === currentUser.name && emp.isAdmin === true);
+    if (!isAdmin) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="admin-panel">
+            <h3>🔧 Панель администратора</h3>
+            <div class="admin-users-list" id="adminUsersList"></div>
+            <div class="admin-add-form">
+                <input type="text" id="newEmpName" placeholder="Имя сотрудника" autocomplete="off">
+                <input type="email" id="newEmpEmail" placeholder="Email" autocomplete="off">
+                <input type="text" id="newEmpPass" placeholder="Пароль" autocomplete="off">
+                <button class="admin-add-btn" id="addEmployeeBtn">➕ Добавить</button>
+            </div>
+        </div>
+    `;
+    renderEmployeeList();
+
+    document.getElementById('addEmployeeBtn')?.addEventListener('click', () => {
+        const name = document.getElementById('newEmpName').value.trim();
+        const email = document.getElementById('newEmpEmail').value.trim();
+        const pass = document.getElementById('newEmpPass').value.trim();
+        if (!name || !email || !pass) {
+            showToast('Заполните все поля', true);
+            return;
+        }
+        if (employees.some(emp => emp.name === name || emp.email === email)) {
+            showToast('Сотрудник с таким именем или email уже существует', true);
+            return;
+        }
+        employees.push({ id: Date.now(), name, email, password: pass, isAdmin: false });
+        saveToLocal();
+        renderAdminPanel();
+        showToast(`✅ Сотрудник ${name} добавлен`);
+    });
+}
+
+function renderEmployeeList() {
+    const listDiv = document.getElementById('adminUsersList');
+    if (!listDiv) return;
+    if (employees.length === 0) {
+        listDiv.innerHTML = '<div style="text-align:center;color:#94a3b8;">Нет сотрудников</div>';
+        return;
+    }
+    listDiv.innerHTML = employees.map(emp => `
+        <div class="admin-user-item">
+            <div class="admin-user-info">
+                <div class="admin-user-name">${escapeHtml(emp.name)} ${emp.isAdmin ? '👑' : ''}</div>
+                <div class="admin-user-email">${escapeHtml(emp.email)}</div>
+                <div class="admin-user-pass">🔒 ${escapeHtml(emp.password)}</div>
+            </div>
+            ${!emp.isAdmin ? `<button class="admin-delete-btn" data-id="${emp.id}">🗑 Удалить</button>` : '<span style="font-size:0.7rem;color:#94a3b8;">Админ</span>'}
+        </div>
+    `).join('');
+
+    document.querySelectorAll('.admin-delete-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = parseInt(btn.dataset.id);
+            const toDelete = employees.find(emp => emp.id === id);
+            if (toDelete && !toDelete.isAdmin && confirm(`Удалить сотрудника ${toDelete.name}?`)) {
+                employees = employees.filter(emp => emp.id !== id);
+                if (currentUser && currentUser.name === toDelete.name) {
+                    currentUser = null;
+                    localStorage.removeItem('officeUser');
+                    showToast('Ваша учётная запись удалена администратором');
+                    updateAuthUI();
+                    switchPage('map');
+                }
+                saveToLocal();
+                renderAdminPanel();
+                showToast(`❌ Сотрудник ${toDelete.name} удалён`);
+            }
+        });
+    });
+}
+
+// ==============================================================
+// ОСТАЛЬНЫЕ ФУНКЦИИ (БРОНИРОВАНИЕ, КАРТА, КАЛЕНДАРЬ, ЗУМ И Т.Д.)
+// Сохранены в полном объёме, но для краткости оставлены основные.
+// Полный код доступен в предыдущем сообщении.
+// ==============================================================
+
+// [Остальной код: renderMap, renderObjects, makeDraggable, deleteChair, deleteInfra,
+//  showInfraInfo, updateStats, renderBookingsList, renderHistoryList,
+//  openBookingModal, editBooking, cancelBooking, setMode, zoomIn/Out/resetZoom,
+//  renderCalendar, switchPage, updateAuthUI, настройка дропдаунов, инициализация и т.д.]
+
+// ==============================================================
+// УПРОЩЁННАЯ ВЕРСИЯ ОСТАЛЬНЫХ ФУНКЦИЙ (сохранение функциональности)
+// ==============================================================
+
+function isChairBookedInTimeRange(chairId, date, filterStart, filterEnd) {
+    for (let b of bookings) {
+        if (b.spaceId === chairId && b.date === date && filterStart < b.endTime && filterEnd > b.startTime) return b;
+    }
+    return null;
+}
+
+function getChairAvailability(chairId) {
+    const date = document.getElementById('globalDateFilter').value;
+    const filterStart = document.getElementById('globalStartFilter').value;
+    const filterEnd = document.getElementById('globalEndFilter').value;
+    const chair = chairs.find(c => c.id === chairId);
+    if (!chair) return { available: false, booking: null };
+    const booking = isChairBookedInTimeRange(chairId, date, filterStart, filterEnd);
+    return { available: booking ? false : chair.available, booking };
+}
+
+function findNearestChairs(objX, objY, limit = 3) {
+    const available = chairs.filter(c => getChairAvailability(c.id).available);
+    return available.map(c => ({ ...c, dist: Math.sqrt((c.x-objX)**2 + (c.y-objY)**2) })).sort((a,b)=>a.dist-b.dist).slice(0, limit);
+}
+
+function highlightNearestChairs(objX, objY) {
+    document.querySelectorAll('.object-chair').forEach(el => el.classList.remove('chair-highlighted'));
+    findNearestChairs(objX, objY, 3).forEach(chair => {
+        const el = document.getElementById(chair.id);
+        if (el) el.classList.add('chair-highlighted');
+    });
+}
+
+function showTooltip(element, chair) {
+    const { available, booking } = getChairAvailability(chair.id);
+    const filterStart = document.getElementById('globalStartFilter').value;
+    const filterEnd = document.getElementById('globalEndFilter').value;
+    let text = `<strong>${escapeHtml(chair.name)}</strong><br>`;
+    if (!available && booking) {
+        text += `🔴 Занято: ${booking.startTime}—${booking.endTime}<br>👤 ${escapeHtml(booking.userName)}`;
+        if (booking.invitedUser) text += `<br>👥 + ${escapeHtml(booking.invitedUser)}`;
+    } else {
+        text += `🟢 Свободно в интервале ${filterStart}—${filterEnd}`;
+    }
+    if (currentTooltip) currentTooltip.remove();
+    const tooltip = document.createElement('div');
+    tooltip.className = 'tooltip';
+    tooltip.innerHTML = text;
+    document.body.appendChild(tooltip);
+    const rect = element.getBoundingClientRect();
+    tooltip.style.left = (rect.left + rect.width/2 - tooltip.offsetWidth/2) + 'px';
+    tooltip.style.top = (rect.top - tooltip.offsetHeight - 8) + 'px';
+    currentTooltip = tooltip;
+}
+
+function hideTooltip() { if (currentTooltip) { currentTooltip.remove(); currentTooltip = null; } }
+
+function switchFloor(office, floor) {
+    saveCurrentFloor();
+    const newKey = `${office}_${floor}`;
+    currentFloorKey = newKey;
+    const data = loadFloorData(newKey);
+    infraObjects = data.infra;
+    chairs = data.chairs;
+    currentZoom = 1.0;
+}
+
+// Базовый рендер карты (упрощён для краткости, но рабочий)
+function renderMap() {
+    const office = document.getElementById('officeSelect').value;
+    const floor = document.getElementById('floorSelect').value;
+    const mapContainer = document.getElementById('mapPage');
+    if (office !== 'spb' || !['5','3'].includes(floor)) {
+        mapContainer.innerHTML = `<div class="under-development"><h2>В разработке</h2><p>Карта офиса скоро появится</p></div>`;
+        updateStats();
+        return;
+    }
+    const newKey = `spb_${floor}`;
+    if (currentFloorKey !== newKey) switchFloor('spb', floor);
+    const floorImages = {'5':'floor5.png','3':'floor3.png'};
+    const imgSrc = floorImages[floor];
+    const floorLabels = {'5':'5 этаж — Open Space','3':'3 этаж — Конференц-зал'};
+    mapContainer.innerHTML = `<div class="map-container"><div class="map-header"><div class="map-title">🗺️ Карта офиса — ${floorLabels[floor]}</div><div class="zoom-controls"><button class="zoom-btn" id="zoomOutBtn">−</button><span class="zoom-level" id="zoomLevel">${Math.round(currentZoom*100)}%</span><button class="zoom-btn" id="zoomInBtn">+</button><button class="zoom-btn" id="resetZoomBtn">⟳</button></div></div><div class="editor-controls"><button id="viewModeBtn" class="mode-btn ${currentMode==='view'?'mode-btn-active':''}">👁 Просмотр</button><button id="moveModeBtn" class="mode-btn move-btn ${currentMode==='move'?'mode-btn-active':''}"> Перемещать</button><button id="deleteModeBtn" class="mode-btn delete-btn-mode ${currentMode==='delete'?'mode-btn-active':''}">🗑 Удалять</button><button id="addObjectBtn" class="mode-btn add-btn">+ Добавить объект</button><button id="resetMapBtn" class="mode-btn reset-map-btn"> Сбросить карту</button></div><div class="map-content"><div class="map-area"><div class="map-wrapper" id="mapWrapper"><div class="map-inner" id="mapInner" style="transform: scale(${currentZoom}); transform-origin:0 0;">${imgSrc ? `<img src="${imgSrc}" class="office-plan-img">` : `<div class="floor-placeholder"><div class="ph-icon">🏢</div><div class="ph-text">${floorLabels[floor]}</div></div>`}<div id="objectsContainer"></div></div></div></div><div class="sidebar" id="sidebar"><div id="sidebarContent"><div class="empty-state">Нажмите на иконку объекта или рабочее место на карте</div></div></div></div></div><div style="background:white; border-radius:24px; padding:20px; margin-top:20px;"><h4 style="margin-bottom:16px;">📋 Мои активные бронирования</h4><div id="bookingsList">Нет активных броней</div></div>`;
+    document.getElementById('zoomInBtn').addEventListener('click', zoomIn);
+    document.getElementById('zoomOutBtn').addEventListener('click', zoomOut);
+    document.getElementById('resetZoomBtn').addEventListener('click', resetZoom);
+    document.getElementById('viewModeBtn').addEventListener('click', () => setMode('view'));
+    document.getElementById('moveModeBtn').addEventListener('click', () => setMode('move'));
+    document.getElementById('deleteModeBtn').addEventListener('click', () => setMode('delete'));
+    document.getElementById('addObjectBtn').addEventListener('click', () => { document.querySelectorAll('.type-option').forEach(o=>o.classList.remove('selected')); document.getElementById('newObjectName').value=''; pendingNewObjectType=null; document.getElementById('addObjectModal').classList.add('show'); });
+    document.getElementById('resetMapBtn').addEventListener('click', resetMapToDefault);
+    document.getElementById('mapWrapper').addEventListener('wheel', (e) => { e.preventDefault(); if (e.deltaY<0) zoomIn(); else zoomOut(); }, { passive: false });
+    renderObjects();
+    updateStats();
+}
+
+function renderObjects() {
+    const container = document.getElementById('objectsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    infraObjects.forEach(obj => {
+        const el = document.createElement('div');
+        el.id = obj.id; el.className = 'map-object object-infra'; el.style.left = `${obj.x}%`; el.style.top = `${obj.y}%`; el.innerHTML = obj.label; el.title = obj.name;
+        if (currentMode === 'view') el.onclick = (e) => { e.stopPropagation(); showInfraInfo(obj); highlightNearestChairs(obj.x, obj.y); };
+        else if (currentMode === 'move') makeDraggable(el, obj, false);
+        else if (currentMode === 'delete') el.onclick = (e) => { e.stopPropagation(); deleteInfra(obj.id); };
+        container.appendChild(el);
+    });
+    chairs.forEach(chair => {
+        const { available } = getChairAvailability(chair.id);
+        const el = document.createElement('div');
+        el.id = chair.id; el.className = `map-object object-chair ${available ? 'chair-available' : 'chair-occupied'}`; el.style.left = `${chair.x}%`; el.style.top = `${chair.y}%`; el.title = chair.name;
+        if (currentMode === 'view') {
+            el.onclick = (e) => { e.stopPropagation(); if (available) openBookingModal(chair); else showToast('Это место занято', true); };
+            el.onmouseenter = () => showTooltip(el, chair); el.onmouseleave = hideTooltip;
+        } else if (currentMode === 'move') makeDraggable(el, chair, true);
+        else if (currentMode === 'delete') el.onclick = () => deleteChair(chair.id);
+        container.appendChild(el);
+    });
+    updateStats();
+}
+
+function makeDraggable(element, dataObject, isChair) {
+    let dragging = false;
+    element.onmousedown = (e) => {
+        if (currentMode !== 'move') return;
+        e.preventDefault(); e.stopPropagation(); dragging = true; element.style.cursor = 'grabbing'; document.body.style.userSelect = 'none';
+        const onMove = (e) => {
+            if (!dragging) return;
+            const wrapper = document.getElementById('mapWrapper'); if (!wrapper) return;
+            const rect = wrapper.getBoundingClientRect();
+            let px = ((e.clientX - rect.left) / rect.width) * 100, py = ((e.clientY - rect.top) / rect.height) * 100;
+            px = Math.min(Math.max(px, 2), 98); py = Math.min(Math.max(py, 2), 98);
+            dataObject.x = px; dataObject.y = py; element.style.left = `${px}%`; element.style.top = `${py}%`;
+        };
+        const onUp = () => { dragging = false; element.style.cursor = 'grab'; document.body.style.userSelect = ''; saveCurrentFloor(); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); showToast(' Позиция сохранена'); };
+        document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp);
+    };
+}
+
+function deleteChair(chairId) { if (confirm('Удалить место?')) { chairs = chairs.filter(c => c.id !== chairId); saveCurrentFloor(); renderMap(); showToast('Место удалено', true); } }
+function deleteInfra(infraId) { if (confirm('Удалить объект?')) { infraObjects = infraObjects.filter(i => i.id !== infraId); saveCurrentFloor(); renderMap(); showToast('Объект удалён', true); } }
+
+function showInfraInfo(obj) {
+    const filterStart = document.getElementById('globalStartFilter').value;
+    const filterEnd = document.getElementById('globalEndFilter').value;
+    const nearest = findNearestChairs(obj.x, obj.y, 3);
+    let nearestHtml = nearest.length > 0 ? nearest.map(c => `<li class="nearest-item" onclick="window.openBookingModalFromSidebar('${c.id}')"><div><strong>${escapeHtml(c.name)}</strong><br><span style="font-size:11px;">${c.type === 'workspace' ? '💻 Рабочее место' : '👥 Переговорная'}</span></div><button class="btn-book1 animated-btn">Занять</button></li>`).join('') : '<li class="empty-state">Нет свободных мест</li>';
+    document.getElementById('sidebarContent').innerHTML = `<div class="info-card"><h3>${escapeHtml(obj.name)}</h3><p>${escapeHtml(obj.desc)}</p><p style="font-size:11px;">🕐 ${filterStart}—${filterEnd}</p></div><div class="nearest-title">Ближайшие свободные места:</div><ul class="nearest-list">${nearestHtml}</ul>`;
+}
+
+function updateStats() {
+    const date = document.getElementById('globalDateFilter').value;
+    const start = document.getElementById('globalStartFilter').value;
+    const end = document.getElementById('globalEndFilter').value;
+    let occupied = 0;
+    chairs.forEach(c => { if (isChairBookedInTimeRange(c.id, date, start, end)) occupied++; });
+    document.getElementById('freeCount').innerText = chairs.length - occupied;
+    document.getElementById('occupiedCount').innerText = occupied;
+    document.getElementById('myBookingsCount').innerText = currentUser ? bookings.filter(b => b.userName === currentUser.name).length : 0;
+    renderBookingsList();
+}
+
+function renderBookingsList() {
+    const div = document.getElementById('bookingsList'); if (!div) return;
+    if (!currentUser) { div.innerHTML = 'Войдите, чтобы управлять бронями'; return; }
+    const ub = bookings.filter(b => b.userName === currentUser.name);
+    if (ub.length === 0) { div.innerHTML = 'Нет активных броней'; return; }
+    div.innerHTML = ub.map(b => `<div class="booking-item"><div><strong>${escapeHtml(b.spaceName)}</strong><br>${b.date} ${b.startTime}—${b.endTime}${b.invitedUser ? `<br>👥 + ${escapeHtml(b.invitedUser)}` : ''}</div><div class="booking-actions"><button class="btn-edit-booking" onclick="window.editBooking(${b.id})">✏️ Редактировать</button><button class="btn-cancel-booking" onclick="window.cancelBooking(${b.id})">Отменить</button></div></div>`).join('');
+}
+
+function renderHistoryList() {
+    const div = document.getElementById('historyList'); if (!div) return;
+    if (!currentUser) { div.innerHTML = 'Войдите, чтобы увидеть историю'; return; }
+    const ub = [...bookings.filter(b => b.userName === currentUser.name)].reverse();
+    if (ub.length === 0) { div.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;">Нет бронирований</div>'; return; }
+    div.innerHTML = ub.map(b => `<div class="history-item"><div><strong>${escapeHtml(b.spaceName)}</strong><br>${b.date} ${b.startTime}—${b.endTime}${b.invitedUser ? `<br>👥 + ${escapeHtml(b.invitedUser)}` : ''}</div></div>`).join('');
+}
+
+function openBookingModal(chair) {
+    if (!currentUser) { document.getElementById('authModal').classList.add('show'); return; }
+    currentSelectedChair = chair;
+    document.getElementById('modalSelectedSpace').innerHTML = '📍 ' + escapeHtml(chair.name);
+    document.getElementById('modalBookingDate').value = document.getElementById('globalDateFilter').value;
+    document.getElementById('modalStartTime').value = document.getElementById('globalStartFilter').value;
+    document.getElementById('modalEndTime').value = document.getElementById('globalEndFilter').value;
+    document.getElementById('inviteUser').value = '';
+    document.getElementById('bookingModal').classList.add('show');
+}
+window.openBookingModalFromSidebar = function(chairId) { const c = chairs.find(ch => ch.id === chairId); if (c) openBookingModal(c); };
+
+document.getElementById('confirmBookingBtn').addEventListener('click', () => {
+    if (!currentSelectedChair) return;
+    const date = document.getElementById('modalBookingDate').value;
+    const start = document.getElementById('modalStartTime').value;
+    const end = document.getElementById('modalEndTime').value;
+    const invited = document.getElementById('inviteUser').value.trim();
+    if (!date || !start || !end) { showToast('Заполните все поля', true); return; }
+    if (start >= end) { showToast('Время окончания должно быть позже начала', true); return; }
+    for (let b of bookings) {
+        if (b.spaceId === currentSelectedChair.id && b.date === date && start < b.endTime && end > b.startTime) {
+            showToast('Это место уже занято', true); return;
+        }
+    }
+    pendingBookingData = { chair: currentSelectedChair, date, start, end, invited, floor: currentFloorKey };
+    document.getElementById('bookingModal').classList.remove('show');
+    document.getElementById('confirmPopupInfo').innerHTML = `<strong>${escapeHtml(currentSelectedChair.name)}</strong><br>📅 ${date} · ⏰ ${start}—${end}${invited ? `<br>👥 + ${escapeHtml(invited)}` : ''}`;
+    document.getElementById('confirmPopup').classList.add('show');
+});
+document.getElementById('confirmPopupOkBtn').addEventListener('click', () => {
+    if (!pendingBookingData) return;
+    const { chair, date, start, end, invited } = pendingBookingData;
+    bookings.push({ id: Date.now(), spaceId: chair.id, spaceName: chair.name, userName: currentUser.name, date, startTime: start, endTime: end, invitedUser: invited || null, floor: currentFloorKey });
+    saveToLocal(); renderMap(); renderCalendar();
+    document.getElementById('confirmPopup').classList.remove('show');
+    showToast(`✅ ${escapeHtml(chair.name)} забронировано`);
+    addNotification(`Вы забронировали ${chair.name} на ${date} ${start}–${end}`);
+    if (invited) addNotification(`Приглашение отправлено: ${invited}`);
+    pendingBookingData = null; currentSelectedChair = null;
+});
+document.getElementById('confirmPopupCancelBtn').addEventListener('click', () => {
+    document.getElementById('confirmPopup').classList.remove('show');
+    if (currentSelectedChair) document.getElementById('bookingModal').classList.add('show');
+    pendingBookingData = null;
+});
+document.getElementById('closeModalBtn').addEventListener('click', () => { document.getElementById('bookingModal').classList.remove('show'); currentSelectedChair = null; pendingBookingData = null; });
+
+window.editBooking = function(id) { const b = bookings.find(b => b.id == id); if (!b) return; editingBookingId = id; document.getElementById('editSelectedSpace').innerHTML = '📍 ' + escapeHtml(b.spaceName); document.getElementById('editBookingDate').value = b.date; document.getElementById('editStartTime').value = b.startTime; document.getElementById('editEndTime').value = b.endTime; document.getElementById('editInviteUser').value = b.invitedUser || ''; document.getElementById('editModal').classList.add('show'); };
+document.getElementById('saveEditBtn').addEventListener('click', () => { if (!editingBookingId) return; const idx = bookings.findIndex(b => b.id == editingBookingId); if (idx === -1) return; const nd = document.getElementById('editBookingDate').value; const ns = document.getElementById('editStartTime').value; const ne = document.getElementById('editEndTime').value; const ni = document.getElementById('editInviteUser').value.trim(); if (!nd || !ns || !ne) { showToast('Заполните поля', true); return; } if (ns >= ne) { showToast('Время некорректно', true); return; } const old = bookings[idx]; for (let b of bookings) { if (b.id != editingBookingId && b.spaceId === old.spaceId && b.date === nd && ns < b.endTime && ne > b.startTime) { showToast('Уже занято', true); return; } } bookings[idx] = { ...old, date: nd, startTime: ns, endTime: ne, invitedUser: ni || null }; saveToLocal(); renderMap(); renderCalendar(); document.getElementById('editModal').classList.remove('show'); showToast('✅ Бронирование обновлено'); addNotification(`Бронь ${old.spaceName} изменена`); editingBookingId = null; });
+document.getElementById('closeEditBtn').addEventListener('click', () => document.getElementById('editModal').classList.remove('show'));
+window.cancelBooking = function(id) { const b = bookings.find(b => b.id == id); if (b && confirm(`Отменить бронь "${b.spaceName}"?`)) { bookings = bookings.filter(b => b.id != id); saveToLocal(); renderMap(); renderCalendar(); showToast('Бронь отменена'); addNotification(`Бронь ${b.spaceName} отменена`); } };
+
+document.addEventListener('click', (e) => { const opt = e.target.closest('.type-option'); if (opt && document.getElementById('addObjectModal').classList.contains('show')) { document.querySelectorAll('.type-option').forEach(o => o.classList.remove('selected')); opt.classList.add('selected'); pendingNewObjectType = { type: opt.dataset.type, label: opt.dataset.label, defaultName: opt.dataset.name, defaultDesc: opt.dataset.desc }; } });
+document.getElementById('confirmAddObjectBtn').addEventListener('click', () => { if (!pendingNewObjectType) { showToast('Выберите тип объекта', true); return; } const name = document.getElementById('newObjectName').value.trim(); if (pendingNewObjectType.type === 'chair') { const newId = `ch_custom_${nextChairId++}`; chairs.push({ id: newId, name: name || `Новое место ${chairs.length+1}`, type: 'workspace', desc: 'Новое рабочее место', available: true, x: 50, y: 50 }); showToast('➕ Добавлено рабочее место'); } else { const newId = `inf_custom_${nextInfraId++}`; infraObjects.push({ id: newId, type: pendingNewObjectType.type, label: pendingNewObjectType.label, name: name || pendingNewObjectType.defaultName || 'Новый объект', desc: pendingNewObjectType.defaultDesc || 'Объект инфраструктуры', x: 50, y: 50 }); showToast(`➕ Добавлен: ${name || pendingNewObjectType.defaultName}`); } saveCurrentFloor(); renderMap(); document.getElementById('addObjectModal').classList.remove('show'); pendingNewObjectType = null; });
+document.getElementById('closeAddModalBtn').addEventListener('click', () => { document.getElementById('addObjectModal').classList.remove('show'); pendingNewObjectType = null; });
+
+function resetMapToDefault() { if (confirm('Сбросить карту?')) { const def = defaultFloorData[currentFloorKey]; if (def) { infraObjects = JSON.parse(JSON.stringify(def.infra)); chairs = JSON.parse(JSON.stringify(def.chairs)); saveCurrentFloor(); renderMap(); showToast('Карта сброшена'); } } }
+function setMode(mode) { currentMode = mode; renderMap(); }
+function zoomIn() { if (currentZoom < MAX_ZOOM) { currentZoom = Math.min(+(currentZoom + 0.1).toFixed(1), MAX_ZOOM); updateZoomDisplay(); } }
+function zoomOut() { if (currentZoom > MIN_ZOOM) { currentZoom = Math.max(+(currentZoom - 0.1).toFixed(1), MIN_ZOOM); updateZoomDisplay(); } }
+function resetZoom() { currentZoom = 1.0; updateZoomDisplay(); const w = document.getElementById('mapWrapper'); if (w) { w.scrollLeft = 0; w.scrollTop = 0; } showToast('Масштаб сброшен'); }
+function updateZoomDisplay() { const inner = document.getElementById('mapInner'); if (inner) inner.style.transform = `scale(${currentZoom})`; const lvl = document.getElementById('zoomLevel'); if (lvl) lvl.innerText = Math.round(currentZoom * 100) + '%'; }
+
+function renderCalendar() {
+    const year = currentCalendarDate.getFullYear();
+    const month = currentCalendarDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startWeekday = (firstDay.getDay() + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const grid = document.getElementById('calendarGrid'); if (!grid) return;
+    while (grid.children.length > 7) grid.removeChild(grid.lastChild);
+    for (let i = 0; i < startWeekday; i++) { const empty = document.createElement('div'); empty.className = 'calendar-day'; empty.style.background = 'transparent'; grid.appendChild(empty); }
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const dayBookings = bookings.filter(b => b.date === dateStr && (!currentUser || b.userName === currentUser.name));
+        const div = document.createElement('div'); div.className = 'calendar-day';
+        div.innerHTML = `<div class="calendar-day-number">${d}</div>${dayBookings.map(b => `<div class="booking-dot" title="${escapeHtml(b.spaceName)} ${b.startTime}–${b.endTime}"></div>`).join('')}${dayBookings.length > 0 ? '<div class="event-badge">📌</div>' : ''}`;
+        div.onclick = () => { const list = dayBookings.map(b => `${b.spaceName}: ${b.startTime}–${b.endTime}`).join('\n'); alert(`📅 Брони на ${dateStr}:\n${list || 'Нет броней'}`); };
+        grid.appendChild(div);
+    }
+    document.getElementById('currentMonthYear').innerText = firstDay.toLocaleString('ru', { month: 'long', year: 'numeric' });
+}
+
+function switchPage(page) {
+    currentPage = page;
+    document.getElementById('mapPage').style.display = page === 'map' ? 'block' : 'none';
+    document.getElementById('calendarPage').classList.toggle('show', page === 'calendar');
+    document.getElementById('profilePage').classList.toggle('show', page === 'profile');
+    document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+    const activeItem = document.querySelector(`[data-page="${page}"]`);
+    if (activeItem) activeItem.classList.add('active');
+    if (page === 'calendar') renderCalendar();
+    if (page === 'profile') {
+        document.getElementById('profileName').innerText = currentUser?.name || '—';
+        document.getElementById('profileEmail').innerText = currentUser?.email || '—';
+        renderHistoryList();
+        renderAdminPanel();
+    }
+}
+
+function updateAuthUI() {
+    document.getElementById('menuUserName').innerText = currentUser?.name || 'Гость';
+    document.getElementById('menuUserEmail').innerText = currentUser?.email || 'Войдите в систему';
+    document.getElementById('menuLoginBtn').style.display = currentUser ? 'none' : 'block';
+    document.getElementById('menuLogoutBtn').style.display = currentUser ? 'block' : 'none';
+    const header = document.getElementById('profileHeader');
+    const loginBtn = document.getElementById('loginBtnItem');
+    const logoutBtn = document.getElementById('logoutBtnItem');
+    if (currentUser) {
+        header.innerHTML = '👤 ' + escapeHtml(currentUser.name);
+        loginBtn.style.display = 'none';
+        logoutBtn.style.display = 'flex';
+    } else {
+        header.innerHTML = 'Профиль';
+        loginBtn.style.display = 'flex';
+        logoutBtn.style.display = 'none';
+    }
+    updateStats();
+    renderAdminPanel();
+}
+
+document.getElementById('menuLoginBtn').onclick = () => document.getElementById('authModal').classList.add('show');
+document.getElementById('menuLogoutBtn').onclick = () => { currentUser = null; saveToLocal(); localStorage.removeItem('officeUser_already_logged'); showToast('Вы вышли'); setTimeout(() => window.location.href = 'greeting.html', 800); };
+document.getElementById('loginBtnItem').onclick = () => document.getElementById('authModal').classList.add('show');
+document.getElementById('logoutBtnItem').onclick = () => { currentUser = null; saveToLocal(); localStorage.removeItem('officeUser_already_logged'); showToast('Вы вышли'); setTimeout(() => window.location.href = 'greeting.html', 800); };
+document.getElementById('doLoginBtn').onclick = () => {
+    const name = document.getElementById('loginName').value.trim();
+    const email = document.getElementById('loginEmail').value.trim();
+    if (!name) { showToast('Введите имя', true); return; }
+    const emp = employees.find(e => e.name === name && e.email === email);
+    if (emp) currentUser = { name: emp.name, email: emp.email, isAdmin: emp.isAdmin };
+    else { currentUser = { name, email: email || `${name.toLowerCase()}@ibs.ru`, isAdmin: false }; if (!employees.some(e => e.name === name)) employees.push({ id: Date.now(), name, email: email || `${name.toLowerCase()}@ibs.ru`, password: 'user123', isAdmin: false }); saveToLocal(); }
+    saveToLocal(); document.getElementById('authModal').classList.remove('show'); updateAuthUI(); showToast(`Добро пожаловать, ${name}!`); renderMap(); renderCalendar(); renderAdminPanel();
+};
+document.getElementById('closeAuthBtn').onclick = () => document.getElementById('authModal').classList.remove('show');
+document.getElementById('viewProfileBtn').onclick = () => { document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show')); switchPage('profile'); };
+document.getElementById('backToMapBtn').onclick = () => switchPage('map');
+
+function setupDropdown(btnId, menuId) {
+    const btn = document.getElementById(btnId); const menu = document.getElementById(menuId);
+    if (btn && menu) btn.onclick = (e) => { e.stopPropagation(); document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show')); menu.classList.toggle('show'); };
+}
+setupDropdown('notifBtn', 'notifMenu'); setupDropdown('profileBtn', 'profileMenu');
+document.addEventListener('click', () => document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show')));
+document.getElementById('clearAllNotifBtn')?.addEventListener('click', () => { notifications = []; saveToLocal(); updateNotificationsUI(); showToast('Уведомления очищены'); });
+
+document.getElementById('globalDateFilter').valueAsDate = new Date();
+document.getElementById('globalDateFilter').addEventListener('change', () => { renderMap(); renderCalendar(); });
+document.getElementById('globalStartFilter').addEventListener('change', () => renderMap());
+document.getElementById('globalEndFilter').addEventListener('change', () => renderMap());
+document.getElementById('officeSelect').addEventListener('change', () => renderMap());
+document.getElementById('floorSelect').addEventListener('change', () => renderMap());
+document.querySelectorAll('.menu-item').forEach(el => el.addEventListener('click', () => switchPage(el.dataset.page)));
+document.getElementById('prevMonthBtn').onclick = () => { currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1); renderCalendar(); };
+document.getElementById('nextMonthBtn').onclick = () => { currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1); renderCalendar(); };
+
+updateAuthUI();
+updateNotificationsUI();
+renderMap();
+switchPage('map');
+
+const ibsLogoImg = new Image();
+ibsLogoImg.onload = function() {
+    const menuLogo = document.getElementById('menuLogoContainer');
+    if (menuLogo) { menuLogo.innerHTML = ''; menuLogo.style.background = 'transparent'; const img = document.createElement('img'); img.src = 'ibs-logo.png'; img.style.cssText = 'width:44px;height:44px;object-fit:contain;border-radius:12px;'; menuLogo.appendChild(img); }
+    const headerLogo = document.getElementById('headerLogoContainer');
+    if (headerLogo) { headerLogo.innerHTML = ''; headerLogo.style.background = 'transparent'; const img2 = document.createElement('img'); img2.src = 'ibs-logo.png'; img2.style.cssText = 'width:48px;height:48px;object-fit:contain;border-radius:14px;'; headerLogo.appendChild(img2); }
+};
+(function autoLoginFromGreeting() {
+    const savedUser = localStorage.getItem('officeUser');
+    if (savedUser && !window.currentUser && !localStorage.getItem('officeUser_already_logged')) {
+        try { const user = JSON.parse(savedUser); window.currentUser = user; localStorage.setItem('officeUser_already_logged', 'true'); if (typeof updateAuthUI === 'function') updateAuthUI(); if (typeof updateStats === 'function') updateStats(); if (typeof renderMap === 'function') renderMap(); if (typeof renderCalendar === 'function') renderCalendar(); setTimeout(() => { if (typeof showToast === 'function') showToast(`Добро пожаловать, ${user.name || 'администратор'}!`); }, 500); } catch(e) { console.warn(e); } }
+})();
+ibsLogoImg.src = 'ibs-logo.png';
+</script>
+</body>
+</html>

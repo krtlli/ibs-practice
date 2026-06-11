@@ -1,1 +1,215 @@
-Hi
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpaceManage — IBS Умный офис</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #5528ff 0%, #200d70 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-8px); }
+            80% { transform: translateX(8px); }
+        }
+
+        .submit-btn.error {
+            background-color: #e74c3c !important;
+            color: #fff !important;
+            animation: shake 0.4s ease;
+        }
+        .brand-container { text-align: center; margin-bottom: 30px; }
+        .brand-logo { width: 140px; height: 140px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); margin-bottom: 25px; }
+        .brand-title { font-size: 32px; font-weight: 700; color: #ffffff; margin: 0 0 8px 0; text-shadow: 0 2px 4px rgba(0,0,0,0.3); letter-spacing: 0.5px; }
+        .brand-subtitle { font-size: 18px; color: #bfa3ff; margin: 0; font-weight: normal; }
+        .brand-subtitle span { color: #96f023; font-weight: bold; margin: 0 5px; }
+        .open-btn { padding: 14px 36px; font-size: 16px; font-weight: bold; color: #5528ff; background-color: #ffffff; border: none; border-radius: 6px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
+        .open-btn:hover { background-color: #f3f4f6; transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(32, 13, 112, 0.6); justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(4px); }
+        .modal-content { background-color: #fff; padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); position: relative; }
+        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 26px; cursor: pointer; color: #aaa; line-height: 1; }
+        .close-btn:hover { color: #5528ff; }
+        h2 { margin-top: 0; margin-bottom: 25px; text-align: center; color: #5528ff; font-size: 24px; }
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: bold; color: #4b5563; font-size: 14px; }
+        .form-group input, .form-group select { width: 100%; padding: 11px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; font-size: 14px; outline: none; transition: all 0.2s; }
+        .form-group input:focus, .form-group select:focus { border-color: #96f023; box-shadow: 0 0 0 3px rgba(150, 240, 35, 0.3); }
+        .submit-btn { width: 100%; padding: 12px; background-color: #96f023; color: #200d70; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: all 0.2s; box-shadow: 0 2px 6px rgba(150, 240, 35, 0.2); }
+        .submit-btn:hover { background-color: #82df14; box-shadow: 0 4px 12px rgba(150, 240, 35, 0.4); }
+        .error-msg { color: #e74c3c; font-size: 12px; margin-top: 5px; display: block; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div class="brand-container">
+        <img class="brand-logo" src="ibs-logo.png" alt="IBS Logo">
+        <h1 class="brand-title">SpaceManage</h1>
+        <p class="brand-subtitle">IBS <span>·</span> Умный офис</p>
+    </div>
+
+    <button class="open-btn" id="openModalBtn">Войти в систему</button>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content">
+            <span class="close-btn" id="closeModalBtn">&times;</span>
+            <h2>Авторизация</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Логин:</label>
+                    <input type="text" id="username" required placeholder="Введите логин">
+                </div>
+                <div class="form-group">
+                    <label for="password">Пароль:</label>
+                    <input type="password" id="password" required placeholder="Введите пароль">
+                </div>
+                <div class="form-group">
+                    <label for="role">Роль в системе:</label>
+                    <select id="role" required>
+                        <option value="" disabled selected>Выберите роль</option>
+                        <option value="admin">Администратор</option>
+                        <option value="employee">Сотрудник</option>
+                    </select>
+                </div>
+                <button type="submit" class="submit-btn">Подтвердить</button>
+                <div id="loginError" class="error-msg"></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const modalOverlay = document.getElementById('modalOverlay');
+        const openModalBtn = document.getElementById('openModalBtn');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const loginForm = document.getElementById('loginForm');
+        const loginError = document.getElementById('loginError');
+        const submitBtn = document.querySelector('.submit-btn');
+
+        function showButtonError() {
+            submitBtn.classList.remove('error');
+
+            // Перезапускаем анимацию
+            void submitBtn.offsetWidth;
+
+            submitBtn.classList.add('error');
+
+            setTimeout(() => {
+                submitBtn.classList.remove('error');
+            }, 1000);
+        }
+
+        openModalBtn.addEventListener('click', () => { 
+            modalOverlay.style.display = 'flex';
+            loginError.textContent = '';
+        });
+        closeModalBtn.addEventListener('click', () => { modalOverlay.style.display = 'none'; });
+        window.addEventListener('click', (event) => { if (event.target === modalOverlay) modalOverlay.style.display = 'none'; });
+
+        loginForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const role = document.getElementById('role').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('loginError');
+
+            errorDiv.textContent = '';
+
+            if (!username) {
+                errorDiv.textContent = 'Введите логин';
+                showButtonError();
+                return;
+            }
+            if (!password) {
+                errorDiv.textContent = 'Введите пароль';
+                showButtonError();
+                return;
+            }
+            if (!role) {
+                errorDiv.textContent = 'Выберите роль';
+                showButtonError();
+                return;
+            }
+
+            // Для администратора — строгая проверка логина и пароля
+            if (role === 'admin') {
+                if (username === 'admin' && password === '1234') {
+                    // Сохраняем данные пользователя с флагом isAdmin = true
+                    const userData = {
+                        name: 'Admin',
+                        email: 'admin@ibs.ru',
+                        role: 'admin',
+                        isAdmin: true
+                    };
+                    localStorage.setItem('officeUser', JSON.stringify(userData));
+                    
+                    // Также создаём запись в списке сотрудников
+                    let employees = JSON.parse(localStorage.getItem('officeEmployees')) || [];
+                    if (!employees.some(emp => emp.name === 'Admin')) {
+                        employees.push({
+                            id: 1,
+                            name: 'Admin',
+                            email: 'admin@ibs.ru',
+                            password: '1234',
+                            isAdmin: true
+                        });
+                        localStorage.setItem('officeEmployees', JSON.stringify(employees));
+                    }
+                    
+                    modalOverlay.style.display = 'none';
+                    loginForm.reset();
+                    alert('✅ Успешный вход! Добро пожаловать, администратор.');
+                    window.location.href = 'base.html';
+                } else {
+                    errorDiv.textContent = 'Неверный логин или пароль администратора';
+                    showButtonError();
+                }
+            } 
+            // Для сотрудника — любой логин/пароль
+            else if (role === 'employee') {
+                if (password.length < 1) {
+                    errorDiv.textContent = 'Введите пароль для входа';
+                    showButtonError();
+                    return;
+                }
+                
+                const userData = {
+                    name: username,
+                    email: `${username.toLowerCase()}@ibs.ru`,
+                    role: 'employee',
+                    isAdmin: false
+                };
+                localStorage.setItem('officeUser', JSON.stringify(userData));
+                
+                // Добавляем сотрудника в список, если его там нет
+                let employees = JSON.parse(localStorage.getItem('officeEmployees')) || [];
+                if (!employees.some(emp => emp.name === username)) {
+                    employees.push({
+                        id: Date.now(),
+                        name: username,
+                        email: `${username.toLowerCase()}@ibs.ru`,
+                        password: password || 'user123',
+                        isAdmin: false
+                    });
+                    localStorage.setItem('officeEmployees', JSON.stringify(employees));
+                }
+                
+                modalOverlay.style.display = 'none';
+                loginForm.reset();
+                alert(`✅ Успешный вход! Добро пожаловать, сотрудник ${username}.`);
+                window.location.href = 'base.html';
+            }
+        });
+    </script>
+
+</body>
+</html>
