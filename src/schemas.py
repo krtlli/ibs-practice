@@ -5,6 +5,12 @@ class UserAuth(BaseModel):
     username: str
     password: str
 
+class UserCreate(BaseModel):
+    username: str
+    password: str
+    full_name: str
+    email: str
+
 class BookingCreate(BaseModel):
     room: str
     booking_date: date

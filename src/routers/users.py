@@ -1,7 +1,7 @@
 import sqlite3
 from datetime import date, time
 from fastapi import APIRouter, HTTPException, Header
-from schemas import UserAuth, BookingResponse
+from schemas import UserCreate, BookingResponse
 from typing import List
 from config import DB_FILE
 import json
@@ -10,21 +10,20 @@ router = APIRouter(tags=["Users"])
 
 @router.get("/api/users", response_model=List[str])
 def get_users():
-    """Получить список всех пользователей"""
     with sqlite3.connect(DB_FILE) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT username FROM users WHERE username != 'admin'")
         return [row[0] for row in cursor.fetchall()]
-    
+
 @router.post("/api/users/add")
-def admin_register(user: UserAuth, x_token: str = Header(...)):
+def admin_register(user: UserCreate, x_token: str = Header(...)):
     with sqlite3.connect(DB_FILE) as conn:
         cursor = conn.cursor()
-        
+
         cursor.execute("SELECT is_admin FROM users WHERE username = ?", (x_token,))
         user_row = cursor.fetchone()
         is_admin = user_row[0] if user_row else 0
-        
+
         if not is_admin:
             raise HTTPException(status_code=403, detail="Доступ запрещен. Только для администраторов")
 
@@ -32,15 +31,16 @@ def admin_register(user: UserAuth, x_token: str = Header(...)):
         if cursor.fetchone():
             raise HTTPException(status_code=400, detail="Пользователь уже существует")
 
-        cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", (user.username, user.password))
+        cursor.execute(
+            "INSERT INTO users (username, password, full_name, email) VALUES (?, ?, ?, ?)",
+            (user.username, user.password, user.full_name, user.email)
+        )
         conn.commit()
-        
-        return {"message": f"Пользователь {user.username} успешно зарегистрирован администратором"}
 
+        return {"message": f"Пользователь {user.username} успешно зарегистрирован администратором"}
 # Сделано Феликсом
 @router.get("/api/users/{username}/bookings", response_model=List[BookingResponse])
 def get_user_bookings(username: str):
-    """Получить все бронирования пользователя"""
     with sqlite3.connect(DB_FILE) as conn:
         cursor = conn.cursor()
 
