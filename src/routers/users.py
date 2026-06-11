@@ -38,7 +38,8 @@ def admin_register(user: UserCreate, x_token: str = Header(...)):
         conn.commit()
 
         return {"message": f"Пользователь {user.username} успешно зарегистрирован администратором"}
-# Сделано Феликсом
+
+
 @router.get("/api/users/{username}/bookings", response_model=List[BookingResponse])
 def get_user_bookings(username: str):
     with sqlite3.connect(DB_FILE) as conn:
@@ -49,19 +50,23 @@ def get_user_bookings(username: str):
             raise HTTPException(status_code=404, detail="Пользователь не найден")
 
         cursor.execute(
-            "SELECT id, room, booking_date, start_time, end_time, participants FROM bookings WHERE username = ?",
-            (username,)
+            """
+            SELECT id, room, username, booking_date, start_time, end_time, participants 
+            FROM bookings 
+            WHERE username = ? OR participants LIKE ?
+            """,
+            (username, f'%"{username}"%')
         )
         rows = cursor.fetchall()
         return [
             {
                 "id": r[0],
                 "room": r[1],
-                "username": username,
-                "booking_date": date.fromisoformat(r[2]),
-                "start_time": time.fromisoformat(r[3]),
-                "end_time": time.fromisoformat(r[4]),
-                "participants": json.loads(r[5]) if r[5] else [],
+                "username": r[2],
+                "booking_date": date.fromisoformat(r[3]),
+                "start_time": time.fromisoformat(r[4]),
+                "end_time": time.fromisoformat(r[5]),
+                "participants": json.loads(r[6]) if r[6] else [],
             }
             for r in rows
         ]
