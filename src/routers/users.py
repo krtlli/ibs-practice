@@ -1,19 +1,19 @@
 import sqlite3
 from datetime import date, time
 from fastapi import APIRouter, HTTPException, Header
-from schemas import UserCreate, BookingResponse
+from schemas import UserCreate, BookingResponse, UserResponse
 from typing import List
 from config import DB_FILE
 import json
 
 router = APIRouter(tags=["Users"])
 
-@router.get("/api/users", response_model=List[str])
+@router.get("/api/users", response_model=List[UserResponse])
 def get_users():
     with sqlite3.connect(DB_FILE) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT username FROM users WHERE username != 'admin'")
-        return [row[0] for row in cursor.fetchall()]
+        cursor.execute("SELECT username, full_name, email FROM users WHERE username != 'admin'")
+        return [{"username": row[0], "full_name": row[1], "email": row[2]} for row in cursor.fetchall()]
 
 @router.post("/api/users/add")
 def admin_register(user: UserCreate, x_token: str = Header(...)):
