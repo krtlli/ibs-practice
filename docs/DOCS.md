@@ -24,8 +24,6 @@
 
 [Документация](https://caddyserver.com/docs/)
 
-// Фронтендеры и тестеровщики добавте свои инструменты //
-
 ## Модули
 
 - [Фронтенд](./frontend.md)
@@ -40,7 +38,7 @@
 
 Установите [uv](https://docs.astral.sh/uv/)
 
-запускаете из src через команду
+запустите командой:
 ``` bash
-uv run uvicorn main:app
+uv run src/main
 ```
