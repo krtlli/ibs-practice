@@ -8,24 +8,31 @@ from config import DB_FILE
 
 router = APIRouter(tags=["WorkspaceBookings"])
 
-@router.get("/api/booking-workspace/{workspace}", response_model=List[WorkspaceBookingResponse])
-def get_workspace_bookings(workspace: str):
+@router.get("/api/booking-workspace", response_model=List[WorkspaceBookingResponse])
+def get_all_workspace_bookings():
     with sqlite3.connect(DB_FILE) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, workspace, username, booking_date, start_time, end_time FROM workspace_bookings WHERE workspace = ?", (workspace,))
+
+        cursor.execute(
+            "SELECT id, workspace, username, booking_date, start_time, end_time FROM workspace_bookings"
+        )
+
         rows = cursor.fetchall()
+
         return [{
-            "id": r[0], "workspace": r[1], "username": r[2],
+            "id": r[0],
+            "workspace": r[1],
+            "username": r[2],
             "booking_date": date.fromisoformat(r[3]),
             "start_time": time.fromisoformat(r[4]),
             "end_time": time.fromisoformat(r[5])
         } for r in rows]
 
-@router.get("/api/booking-workspace", response_model=List[WorkspaceBookingResponse])
+@router.get("/api/booking-workspace/{workspace}", response_model=List[WorkspaceBookingResponse])
 def get_workspace_bookings(workspace: str):
     with sqlite3.connect(DB_FILE) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, workspace, username, booking_date, start_time, end_time FROM workspace_bookings", (workspace,))
+        cursor.execute("SELECT id, workspace, username, booking_date, start_time, end_time FROM workspace_bookings WHERE workspace = ?", (workspace,))
         rows = cursor.fetchall()
         return [{
             "id": r[0], "workspace": r[1], "username": r[2],

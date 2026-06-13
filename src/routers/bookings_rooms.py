@@ -9,15 +9,20 @@ from config import DB_FILE
 
 router = APIRouter(tags=["Bookings"])
 
-@router.get("/api/booking-rooms/{room}", response_model=List[BookingResponse])
-def get_bookings(room: str):
+@router.get("/api/booking-rooms", response_model=List[BookingResponse])
+def get_all_bookings():
     with sqlite3.connect(DB_FILE) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, room, username, booking_date, start_time, end_time, participants FROM bookings WHERE room = ?", (room,))
+        cursor.execute(
+            "SELECT id, room, username, booking_date, start_time, end_time, participants FROM bookings"
+        )
+
         rows = cursor.fetchall()
         result = []
+
         for r in rows:
             participants = json.loads(r[6]) if r[6] else []
+
             result.append({
                 "id": r[0],
                 "room": r[1],
@@ -27,13 +32,14 @@ def get_bookings(room: str):
                 "end_time": time.fromisoformat(r[5]),
                 "participants": participants
             })
+
         return result
-    
-@router.get("/api/booking-rooms", response_model=List[BookingResponse])
+
+@router.get("/api/booking-rooms/{room}", response_model=List[BookingResponse])
 def get_bookings(room: str):
     with sqlite3.connect(DB_FILE) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, room, username, booking_date, start_time, end_time, participants FROM bookings", (room,))
+        cursor.execute("SELECT id, room, username, booking_date, start_time, end_time, participants FROM bookings WHERE room = ?", (room,))
         rows = cursor.fetchall()
         result = []
         for r in rows:
