@@ -28,6 +28,26 @@ def get_bookings(room: str):
                 "participants": participants
             })
         return result
+    
+@router.get("/api/booking-rooms", response_model=List[BookingResponse])
+def get_bookings(room: str):
+    with sqlite3.connect(DB_FILE) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, room, username, booking_date, start_time, end_time, participants FROM bookings", (room,))
+        rows = cursor.fetchall()
+        result = []
+        for r in rows:
+            participants = json.loads(r[6]) if r[6] else []
+            result.append({
+                "id": r[0],
+                "room": r[1],
+                "username": r[2],
+                "booking_date": date.fromisoformat(r[3]),
+                "start_time": time.fromisoformat(r[4]),
+                "end_time": time.fromisoformat(r[5]),
+                "participants": participants
+            })
+        return result
 
 @router.post("/api/booking-rooms", response_model=BookingResponse)
 def create_booking(booking: BookingCreate, x_token: str = Header(...)):
