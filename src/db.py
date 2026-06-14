@@ -1,5 +1,6 @@
 import sqlite3
 from config import DB_FILE
+from security import hash_password
 
 def init_db():
     with sqlite3.connect(DB_FILE) as conn:
@@ -14,10 +15,10 @@ def init_db():
                 email TEXT
             )
         """)
-        #Админ
+        #Админ (пароль хранится в виде bcrypt-хеша)
         cursor.execute(
             "INSERT OR IGNORE INTO users (username, password, is_admin, full_name, email) VALUES (?, ?, ?, ?, ?)",
-            ("admin", "admin", 1, "Admin", "admin@localhost")
+            ("admin", hash_password("admin"), 1, "Admin", "admin@localhost")
         )
         #Переговорные
         cursor.execute("CREATE TABLE IF NOT EXISTS rooms (name TEXT PRIMARY KEY)")

@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Header
 from schemas import UserCreate, BookingResponse, UserResponse
 from typing import List
 from config import DB_FILE
+from security import hash_password
 import json
 
 router = APIRouter(tags=["Users"])
@@ -33,7 +34,7 @@ def admin_register(user: UserCreate, x_token: str = Header(...)):
 
         cursor.execute(
             "INSERT INTO users (username, password, full_name, email) VALUES (?, ?, ?, ?)",
-            (user.username, user.password, user.full_name, user.email)
+            (user.username, hash_password(user.password), user.full_name, user.email)
         )
         conn.commit()
 
