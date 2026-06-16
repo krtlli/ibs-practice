@@ -185,22 +185,23 @@ function logout() {
 
 // --- Создание брони ---
 async function createBookingOnServer(spaceId, spaceName, spaceType, date, startTime, endTime, invitedLogins) {
-    // spaceId – это уникальный id объекта из floor.js
+
+    const formatTime = (time) => time.length === 5 ? time + ':00' : time;
     if (spaceType === 'meeting_room') {
         const payload = {
-            room: spaceId,          // теперь отправляем id, а не имя
+            room: spaceId,
             booking_date: date,
-            start_time: startTime + ':00',
-            end_time: endTime + ':00',
+            start_time: formatTime(startTime),
+            end_time: formatTime(endTime),
             participants: invitedLogins || []
         };
         await apiRequest('POST', '/api/booking-rooms', payload, currentUser.username);
     } else {
         const payload = {
-            workspace: spaceId,     // отправляем id
+            workspace: spaceId,
             booking_date: date,
-            start_time: startTime + ':00',
-            end_time: endTime + ':00'
+            start_time: formatTime(startTime),
+            end_time: formatTime(endTime),
         };
         await apiRequest('POST', '/api/booking-workspace', payload, currentUser.username);
     }
