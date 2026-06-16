@@ -19,7 +19,7 @@ let currentMaxInvites = null;
 let currentEditMaxInvites = null;
 
 // --- Вспомогательные функции ---
-function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
+function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]); }
 function showToast(msg, isError) { const toast = document.createElement('div'); toast.className = 'toast' + (isError ? ' error' : ''); toast.innerText = msg; document.body.appendChild(toast); setTimeout(() => toast.remove(), 2500); }
 function formatDateForDisplay(dateStr) { if (!dateStr) return ''; if (dateStr.includes('-')) { const parts = dateStr.split('-'); if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`; } return dateStr; }
 function isRealAdmin() { return currentUser && currentUser.isAdmin === true; }
@@ -27,7 +27,7 @@ function saveCurrentUser() { localStorage.setItem('officeUser', JSON.stringify(c
 function loadCurrentUser() {
     const saved = localStorage.getItem('officeUser');
     if (saved) {
-        try { currentUser = JSON.parse(saved); } catch(e) { currentUser = null; }
+        try { currentUser = JSON.parse(saved); } catch (e) { currentUser = null; }
     }
 }
 
@@ -46,7 +46,7 @@ async function apiRequest(method, endpoint, body = null, token = null) {
             const data = await resp.json();
             if (data.detail) errMsg = data.detail;
             else if (data.message) errMsg = data.message;
-        } catch(e) {}
+        } catch (e) { }
         throw new Error(errMsg);
     }
     if (resp.status === 204) return null;
@@ -58,7 +58,7 @@ async function loadUsers() {
     try {
         users = await apiRequest('GET', '/api/users');
         return users;
-    } catch(e) {
+    } catch (e) {
         showToast('Не удалось загрузить список пользователей', true);
         return [];
     }
@@ -125,9 +125,19 @@ async function loadBookings() {
             });
         });
 
-        bookings = all;
+        // Админ видит всё, остальные только свои и приглашения
+        if (!currentUser?.isAdmin) {
+            bookings = all.filter(
+                b =>
+                    b.userName === currentUser.username ||
+                    b.invitedUsers?.includes(currentUser.username)
+            );
+        } else {
+            bookings = all;
+        }
+
         return bookings;
-    } catch(e) {
+    } catch (e) {
         showToast('Не удалось загрузить бронирования', true);
         return [];
     }
@@ -154,7 +164,7 @@ async function login(username, password) {
         renderCalendar();
         renderAdminPanel();
         showToast(`Добро пожаловать, ${fullName}!`);
-    } catch(e) {
+    } catch (e) {
         showToast('Ошибка входа: ' + e.message, true);
         throw e;
     }
@@ -279,7 +289,7 @@ function getRecreationAvailability(rec) {
 function renderMap() {
     const office = document.getElementById('officeSelect').value, floor = document.getElementById('floorSelect').value;
     const mapContainer = document.getElementById('mapPage');
-    if (office !== 'spb' || !['5','3'].includes(floor)) {
+    if (office !== 'spb' || !['5', '3'].includes(floor)) {
         mapContainer.innerHTML = `<div class="under-development"><h2>В разработке</h2><p>Карта скоро появится</p></div>`;
         updateStats();
         return;
@@ -287,7 +297,7 @@ function renderMap() {
     const newKey = `spb_${floor}`;
     if (currentFloorKey !== newKey) switchFloor('spb', floor);
     const imgSrc = floor === '5' ? 'assets/floor5.png' : 'assets/floor3.png';
-    const floorLabels = {'5':'5 этаж — Open Space','3':'3 этаж — Конференц-зал'};
+    const floorLabels = { '5': '5 этаж — Open Space', '3': '3 этаж — Конференц-зал' };
     mapContainer.innerHTML = `<div class="map-container">
         <div class="map-header">
             <div class="map-title">${floorLabels[floor]}</div>
@@ -299,7 +309,7 @@ function renderMap() {
                 </div>
                 <div class="zoom-controls">
                     <button class="zoom-btn" id="zoomOutBtn">−</button>
-                    <span class="zoom-level" id="zoomLevel">${Math.round(currentZoom*100)}%</span>
+                    <span class="zoom-level" id="zoomLevel">${Math.round(currentZoom * 100)}%</span>
                     <button class="zoom-btn" id="zoomInBtn">+</button>
                     <button class="zoom-btn" id="resetZoomBtn">⟳</button>
                 </div>
@@ -326,7 +336,7 @@ function renderMap() {
     document.getElementById('zoomInBtn').onclick = zoomIn;
     document.getElementById('zoomOutBtn').onclick = zoomOut;
     document.getElementById('resetZoomBtn').onclick = resetZoom;
-    document.getElementById('mapWrapper').addEventListener('wheel', e => { e.preventDefault(); if(e.deltaY<0) zoomIn(); else zoomOut(); }, { passive: false });
+    document.getElementById('mapWrapper').addEventListener('wheel', e => { e.preventDefault(); if (e.deltaY < 0) zoomIn(); else zoomOut(); }, { passive: false });
     renderObjects();
     updateStats();
     renderMapMyBookings();
@@ -334,62 +344,62 @@ function renderMap() {
 
 function renderObjects() {
     const c = document.getElementById('objectsContainer');
-    if(!c) return;
-    c.innerHTML='';
+    if (!c) return;
+    c.innerHTML = '';
     // Инфраструктура
-    infraObjects.forEach(obj=>{
-        const el=document.createElement('div');
-        el.id=obj.id;
-        el.className='map-object object-infra';
-        el.style.left=obj.x+'%';
-        el.style.top=obj.y+'%';
-        el.innerHTML=obj.label;
-        el.title=obj.name;
-        el.onclick=(e)=>{ e.stopPropagation(); showInfraInfo(obj); highlightNearestSpaces(obj.x,obj.y); };
+    infraObjects.forEach(obj => {
+        const el = document.createElement('div');
+        el.id = obj.id;
+        el.className = 'map-object object-infra';
+        el.style.left = obj.x + '%';
+        el.style.top = obj.y + '%';
+        el.innerHTML = obj.label;
+        el.title = obj.name;
+        el.onclick = (e) => { e.stopPropagation(); showInfraInfo(obj); highlightNearestSpaces(obj.x, obj.y); };
         c.appendChild(el);
     });
     // Переговорные
-    meetingRooms.forEach(room=>{
-        const {available}=getMeetingRoomAvailability(room);
-        const el=document.createElement('div');
-        el.id=room.id;
-        el.className=`map-object object-meeting-room ${available?'meeting-available':'meeting-occupied'}`;
-        el.style.left=room.x+'%';
-        el.style.top=room.y+'%';
-        el.innerHTML=room.label||'👥';
-        el.title=`${room.name} (${room.capacity} чел.)`;
-        el.onclick=(e)=>{ e.stopPropagation(); showMeetingRoomInfo(room); };
-        el.onmouseenter=()=>showTooltip(el,room,'meeting_room');
-        el.onmouseleave=hideTooltip;
+    meetingRooms.forEach(room => {
+        const { available } = getMeetingRoomAvailability(room);
+        const el = document.createElement('div');
+        el.id = room.id;
+        el.className = `map-object object-meeting-room ${available ? 'meeting-available' : 'meeting-occupied'}`;
+        el.style.left = room.x + '%';
+        el.style.top = room.y + '%';
+        el.innerHTML = room.label || '👥';
+        el.title = `${room.name} (${room.capacity} чел.)`;
+        el.onclick = (e) => { e.stopPropagation(); showMeetingRoomInfo(room); };
+        el.onmouseenter = () => showTooltip(el, room, 'meeting_room');
+        el.onmouseleave = hideTooltip;
         c.appendChild(el);
     });
     // Зоны отдыха
-    recreation.forEach(rec=>{
-        const {available}=getRecreationAvailability(rec);
-        const el=document.createElement('div');
-        el.id=rec.id;
-        el.className=`map-object object-recreation ${available?'rec-available':'rec-occupied'}`;
-        el.style.left=rec.x+'%';
-        el.style.top=rec.y+'%';
-        el.innerHTML=rec.label;
-        el.title=rec.name;
-        el.onclick=(e)=>{ e.stopPropagation(); showRecreationInfo(rec); };
-        el.onmouseenter=()=>showTooltip(el,rec,rec.type);
-        el.onmouseleave=hideTooltip;
+    recreation.forEach(rec => {
+        const { available } = getRecreationAvailability(rec);
+        const el = document.createElement('div');
+        el.id = rec.id;
+        el.className = `map-object object-recreation ${available ? 'rec-available' : 'rec-occupied'}`;
+        el.style.left = rec.x + '%';
+        el.style.top = rec.y + '%';
+        el.innerHTML = rec.label;
+        el.title = rec.name;
+        el.onclick = (e) => { e.stopPropagation(); showRecreationInfo(rec); };
+        el.onmouseenter = () => showTooltip(el, rec, rec.type);
+        el.onmouseleave = hideTooltip;
         c.appendChild(el);
     });
     // Кресла
-    chairs.forEach(chair=>{
-        const {available}=getChairAvailability(chair);
-        const el=document.createElement('div');
-        el.id=chair.id;
-        el.className=`map-object object-chair ${available?'chair-available':'chair-occupied'}`;
-        el.style.left=chair.x+'%';
-        el.style.top=chair.y+'%';
-        el.title=chair.name;
-        el.onclick=()=>{ if(available) openBookingModal(chair, 'chair'); else showToast('Это место уже занято',true); };
-        el.onmouseenter=()=>showTooltip(el,chair,'chair');
-        el.onmouseleave=hideTooltip;
+    chairs.forEach(chair => {
+        const { available } = getChairAvailability(chair);
+        const el = document.createElement('div');
+        el.id = chair.id;
+        el.className = `map-object object-chair ${available ? 'chair-available' : 'chair-occupied'}`;
+        el.style.left = chair.x + '%';
+        el.style.top = chair.y + '%';
+        el.title = chair.name;
+        el.onclick = () => { if (available) openBookingModal(chair, 'chair'); else showToast('Это место уже занято', true); };
+        el.onmouseenter = () => showTooltip(el, chair, 'chair');
+        el.onmouseleave = hideTooltip;
         c.appendChild(el);
     });
     updateStats();
@@ -411,7 +421,7 @@ function showTooltip(element, item, type) {
     if (currentTooltip) currentTooltip.remove();
     const tt = document.createElement('div'); tt.className = 'tooltip'; tt.innerHTML = text; document.body.appendChild(tt);
     const rect = element.getBoundingClientRect();
-    tt.style.left = (rect.left + rect.width/2 - tt.offsetWidth/2) + 'px';
+    tt.style.left = (rect.left + rect.width / 2 - tt.offsetWidth / 2) + 'px';
     tt.style.top = (rect.top - tt.offsetHeight - 8) + 'px';
     currentTooltip = tt;
 }
@@ -423,14 +433,14 @@ function showInfraInfo(obj) {
     document.getElementById('sidebarContent').innerHTML = `<div class="info-card"><h3>${escapeHtml(obj.name)}</h3><p>${escapeHtml(obj.desc)}</p><p style="font-size:11px;margin-top:8px;">${document.getElementById('globalStartFilter').value}—${document.getElementById('globalEndFilter').value}</p></div><div class="nearest-title">Ближайшие свободные места:</div><ul class="nearest-list">${nearestHtml}</ul>`;
 }
 function showMeetingRoomInfo(room) {
-    const {available, booking} = getMeetingRoomAvailability(room);
+    const { available, booking } = getMeetingRoomAvailability(room);
     const start = document.getElementById('globalStartFilter').value, end = document.getElementById('globalEndFilter').value;
     let status = available ? '<span style="color:var(--ibs-lime);">Свободна</span>' : `<span style="color:#e74c3c;">Занята (${booking?.startTime}—${booking?.endTime})</span>`;
     const btn = available ? `<button class="btn-book1 animated-btn" style="margin-top:15px; width:50%;" onclick="openMeetingBookingModal('${room.id}')">Забронировать</button>` : '';
     document.getElementById('sidebarContent').innerHTML = `<div class="info-card"><h3>${escapeHtml(room.name)}</h3><p>${escapeHtml(room.desc)}</p><p>Вместимость: ${room.capacity} человек</p><p>Проектор: ${room.hasProjector ? 'есть' : 'нет'}</p><p>${start}—${end}</p><p>${status}</p>${btn}</div>`;
 }
 function showRecreationInfo(rec) {
-    const {available, booking} = getRecreationAvailability(rec);
+    const { available, booking } = getRecreationAvailability(rec);
     const start = document.getElementById('globalStartFilter').value, end = document.getElementById('globalEndFilter').value;
     let status = available ? '<span style="color:var(--ibs-lime);">Свободно</span>' : `<span style="color:#e74c3c;">Занято (${booking?.startTime}—${booking?.endTime})</span>`;
     const btn = available ? `<button class="btn-book1 animated-btn" style="margin-top:15px; width:50%;" onclick="openRecreationBookingModal('${rec.id}')">Забронировать</button>` : '';
@@ -442,7 +452,7 @@ function findNearestSpaces(objX, objY, limit = 3) {
     const availableChairs = chairs.filter(c => !isItemBooked(c.id, date, start, end) && c.available);
     const availableRooms = meetingRooms.filter(r => !isItemBooked(r.id, date, start, end) && r.available);
     const allSpaces = [...availableChairs.map(s => ({ ...s, spaceType: 'chair', icon: '💺' })), ...availableRooms.map(s => ({ ...s, spaceType: 'meeting_room', icon: '👥' }))];
-    return allSpaces.map(s => ({ ...s, dist: Math.hypot(s.x-objX, s.y-objY) })).sort((a,b)=>a.dist-b.dist).slice(0, limit);
+    return allSpaces.map(s => ({ ...s, dist: Math.hypot(s.x - objX, s.y - objY) })).sort((a, b) => a.dist - b.dist).slice(0, limit);
 }
 function highlightNearestSpaces(objX, objY) { document.querySelectorAll('.object-chair, .object-meeting-room').forEach(el => el.classList.remove('chair-highlighted', 'meeting-highlighted')); findNearestSpaces(objX, objY, 3).forEach(space => { const el = document.getElementById(space.id); if (el) { if (space.spaceType === 'chair') el.classList.add('chair-highlighted'); else el.classList.add('meeting-highlighted'); } }); }
 
@@ -480,8 +490,8 @@ function renderMapMyBookings() {
     const container = document.getElementById('mapMyBookingsList');
     if (!container) return;
     if (!currentUser) { container.innerHTML = '<div style="color:var(--ibs-text-light); text-align:center; padding:12px;">Войдите, чтобы увидеть свои бронирования</div>'; return; }
-    const selectedDate=document.getElementById('globalDateFilter')?.value;
-    const userBookings = bookings.filter(b => b.userName === currentUser.username && b.date===selectedDate);
+    const selectedDate = document.getElementById('globalDateFilter')?.value;
+    const userBookings = bookings.filter(b => b.userName === currentUser.username && b.date === selectedDate);
     if (userBookings.length === 0) { container.innerHTML = '<div style="color:var(--ibs-text-light); text-align:center; padding:12px;">У вас нет активных бронирований</div>'; return; }
     container.innerHTML = userBookings.map(b => {
         const spaceName = b.spaceName;
@@ -502,43 +512,43 @@ function renderMapMyBookings() {
     }).join('');
 }
 
-window.cancelBookingFromMap = async function(id) {
+window.cancelBookingFromMap = async function (id) {
     const b = bookings.find(b => b.id == id);
-    if(!b) return;
-    if(!confirm(`Отменить бронь "${b.spaceName}"?`)) return;
+    if (!b) return;
+    if (!confirm(`Отменить бронь "${b.spaceName}"?`)) return;
     try {
         await deleteBookingOnServer(id, b.spaceType);
         renderMap();
         renderCalendar();
         showToast('Бронь отменена');
         addNotification(`Бронь ${b.spaceName} отменена`);
-    } catch(e) {
+    } catch (e) {
         showToast('Ошибка при отмене: ' + e.message, true);
     }
 };
 
 // --- Бронирование (модалки) ---
 function openBookingModal(item, type) {
-    if(!currentUser){ document.getElementById('authModal').classList.add('show'); return; }
+    if (!currentUser) { document.getElementById('authModal').classList.add('show'); return; }
     currentSelectedItem = { id: item.id, name: item.name, type: type };
     if (type === 'meeting_room') { const room = meetingRooms.find(r => r.id === item.id); currentMaxInvites = room ? room.capacity : null; }
-    else if(type==='playstation' || type==='recreation'){ currentMaxInvites = 2; }
+    else if (type === 'playstation' || type === 'recreation') { currentMaxInvites = 2; }
     else { currentMaxInvites = 0; }
-    const inviteGroup=document.querySelector('#bookingModal .invite-group'); if(inviteGroup) inviteGroup.style.display=currentMaxInvites>0?'block':'none';
-    const cols=document.querySelector('#bookingModal .booking-two-columns'); if(cols){ cols.classList.toggle('single-seat-mode', currentMaxInvites<=0); }
+    const inviteGroup = document.querySelector('#bookingModal .invite-group'); if (inviteGroup) inviteGroup.style.display = currentMaxInvites > 0 ? 'block' : 'none';
+    const cols = document.querySelector('#bookingModal .booking-two-columns'); if (cols) { cols.classList.toggle('single-seat-mode', currentMaxInvites <= 0); }
     const capacityInfoSpan = document.getElementById('capacityInfo'); if (capacityInfoSpan) { capacityInfoSpan.innerHTML = currentMaxInvites !== null ? `Макс. ${currentMaxInvites} чел.` : ''; }
     document.getElementById('modalSelectedSpace').innerHTML = escapeHtml(item.name);
     document.getElementById('modalBookingDate').value = document.getElementById('globalDateFilter').value;
     document.getElementById('modalStartTime').value = document.getElementById('globalStartFilter').value;
     document.getElementById('modalEndTime').value = document.getElementById('globalEndFilter').value;
-    currentInvitedList = []; renderInviteList('inviteListContainer', currentInvitedList, () => {}, currentMaxInvites); updateAddButtonState('inviteListContainer', 0, currentMaxInvites);
+    currentInvitedList = []; renderInviteList('inviteListContainer', currentInvitedList, () => { }, currentMaxInvites); updateAddButtonState('inviteListContainer', 0, currentMaxInvites);
     document.getElementById('bookingModal').classList.add('show');
 }
-function openMeetingBookingModal(roomId) { const room = meetingRooms.find(r=>r.id===roomId); if(room) openBookingModal(room, 'meeting_room'); }
-function openRecreationBookingModal(recId) { const rec = recreation.find(r=>r.id===recId); if(rec) openBookingModal(rec, rec.type); }
-window.openBookingModalFromId = function(id, type) {
-    if(type === 'chair') { const c = chairs.find(ch=>ch.id===id); if(c) openBookingModal(c, 'chair'); }
-    else if(type === 'meeting_room') { const r = meetingRooms.find(rm=>rm.id===id); if(r) openBookingModal(r, 'meeting_room'); }
+function openMeetingBookingModal(roomId) { const room = meetingRooms.find(r => r.id === roomId); if (room) openBookingModal(room, 'meeting_room'); }
+function openRecreationBookingModal(recId) { const rec = recreation.find(r => r.id === recId); if (rec) openBookingModal(rec, rec.type); }
+window.openBookingModalFromId = function (id, type) {
+    if (type === 'chair') { const c = chairs.find(ch => ch.id === id); if (c) openBookingModal(c, 'chair'); }
+    else if (type === 'meeting_room') { const r = meetingRooms.find(rm => rm.id === id); if (r) openBookingModal(r, 'meeting_room'); }
 };
 
 document.getElementById('addInviteBtn').onclick = () => { addInviteToList(currentInvitedList, 'inviteListContainer', currentMaxInvites); };
@@ -553,19 +563,19 @@ function renderInviteList(containerId, invitedList, onRemove, maxInvites) {
     container.querySelectorAll('.remove-invite-btn').forEach(btn => { btn.addEventListener('click', (e) => { const idx = parseInt(btn.dataset.index); if (!isNaN(idx)) { invitedList.splice(idx, 1); renderInviteList(containerId, invitedList, onRemove, maxInvites); if (onRemove) onRemove(); updateAddButtonState(containerId, invitedList.length, maxInvites); } }); });
 }
 function updateAddButtonState(containerId, currentCount, maxInvites) { const addBtn = containerId === 'inviteListContainer' ? document.getElementById('addInviteBtn') : document.getElementById('editAddInviteBtn'); if (addBtn && maxInvites !== null) { addBtn.disabled = currentCount >= maxInvites; addBtn.title = currentCount >= maxInvites ? `Максимум ${maxInvites} приглашённых` : ''; } }
-function addInviteToList(invitedList, renderContainerId, maxInvites) { if (maxInvites !== null && invitedList.length >= maxInvites) { showToast(`Максимум можно пригласить ${maxInvites} коллег`, true); return; } invitedList.push(`Коллега ${invitedList.length + 1}`); renderInviteList(renderContainerId, invitedList, () => {}, maxInvites); updateAddButtonState(renderContainerId, invitedList.length, maxInvites); }
+function addInviteToList(invitedList, renderContainerId, maxInvites) { if (maxInvites !== null && invitedList.length >= maxInvites) { showToast(`Максимум можно пригласить ${maxInvites} коллег`, true); return; } invitedList.push(`Коллега ${invitedList.length + 1}`); renderInviteList(renderContainerId, invitedList, () => { }, maxInvites); updateAddButtonState(renderContainerId, invitedList.length, maxInvites); }
 
 // Подтверждение брони
 document.getElementById('confirmBookingBtn').onclick = () => {
-    if(!currentSelectedItem || !currentUser) return;
+    if (!currentSelectedItem || !currentUser) return;
     const date = document.getElementById('modalBookingDate').value, start = document.getElementById('modalStartTime').value, end = document.getElementById('modalEndTime').value;
-    if(!date || !start || !end){ showToast('Заполните все поля', true); return; }
-    if(start >= end){ showToast('Время окончания должно быть позже начала', true); return; }
+    if (!date || !start || !end) { showToast('Заполните все поля', true); return; }
+    if (start >= end) { showToast('Время окончания должно быть позже начала', true); return; }
     // Проверка занятости
 
 
     const spaceId = currentSelectedItem.id;
-    if(isItemBooked(spaceId, date, start, end)){ showToast('Это место уже занято', true); return; }
+    if (isItemBooked(spaceId, date, start, end)) { showToast('Это место уже занято', true); return; }
     // Преобразуем имена приглашённых в логины
     const invitedNames = currentInvitedList.filter(n => n.trim() !== '');
     const invitedLogins = [];
@@ -587,14 +597,14 @@ document.getElementById('confirmBookingBtn').onclick = () => {
     document.getElementById('confirmPopup').classList.add('show');
 };
 document.getElementById('confirmPopupOkBtn').onclick = async () => {
-    if(!pendingBookingData) return;
+    if (!pendingBookingData) return;
     const { item, date, start, end, invitedLogins } = pendingBookingData;
     try {
         await createBookingOnServer(item.id, item.name, item.type, date, start, end, invitedLogins);
         document.getElementById('confirmPopup').classList.remove('show');
         showToast(`${item.name} забронировано`);
         addNotification(`Вы забронировали ${item.name} на ${formatDateForDisplay(date)} ${start}–${end}`);
-        if(invitedLogins.length) addNotification(`Приглашения отправлены: ${invitedLogins.map(u => {
+        if (invitedLogins.length) addNotification(`Приглашения отправлены: ${invitedLogins.map(u => {
             const user = users.find(usr => usr.username === u);
             return user ? user.full_name : u;
         }).join(', ')}`);
@@ -602,13 +612,13 @@ document.getElementById('confirmPopupOkBtn').onclick = async () => {
         renderCalendar();
         renderProfileBookingsList();
         pendingBookingData = null; currentSelectedItem = null; currentInvitedList = []; currentMaxInvites = null;
-    } catch(e) {
+    } catch (e) {
         showToast('Ошибка бронирования: ' + e.message, true);
     }
 };
 document.getElementById('confirmPopupCancelBtn').onclick = () => {
     document.getElementById('confirmPopup').classList.remove('show');
-    if(currentSelectedItem) document.getElementById('bookingModal').classList.add('show');
+    if (currentSelectedItem) document.getElementById('bookingModal').classList.add('show');
     pendingBookingData = null;
 };
 document.getElementById('closeModalBtn').onclick = () => {
@@ -617,9 +627,9 @@ document.getElementById('closeModalBtn').onclick = () => {
 };
 
 // --- Редактирование брони (удаление + создание) ---
-window.editBooking = function(id) {
+window.editBooking = function (id) {
     const b = bookings.find(b => b.id == id);
-    if(!b) return;
+    if (!b) return;
     editingBookingId = id;
     // Определяем максимальное количество приглашений
     if (b.spaceType === 'meeting_room') {
@@ -653,7 +663,7 @@ window.editBooking = function(id) {
     const containerEl = document.getElementById('editInviteListContainer');
     if (containerEl) {
         if (currentEditMaxInvites > 0) {
-            renderInviteList('editInviteListContainer', currentEditInvitedList, function(index) {
+            renderInviteList('editInviteListContainer', currentEditInvitedList, function (index) {
                 currentEditInvitedList.splice(index, 1);
                 renderInviteList('editInviteListContainer', currentEditInvitedList, this, currentEditMaxInvites);
                 updateAddButtonState('editInviteListContainer', currentEditInvitedList.length, currentEditMaxInvites);
@@ -667,17 +677,17 @@ window.editBooking = function(id) {
 };
 
 document.getElementById('saveEditBtn').onclick = async () => {
-    if(!editingBookingId) return;
+    if (!editingBookingId) return;
     const oldBooking = bookings.find(b => b.id == editingBookingId);
-    if(!oldBooking) return;
+    if (!oldBooking) return;
     const nd = document.getElementById('editBookingDate').value;
     const ns = document.getElementById('editStartTime').value;
     const ne = document.getElementById('editEndTime').value;
-    if(!nd || !ns || !ne){ showToast('Заполните поля', true); return; }
-    if(ns >= ne){ showToast('Время некорректно', true); return; }
+    if (!nd || !ns || !ne) { showToast('Заполните поля', true); return; }
+    if (ns >= ne) { showToast('Время некорректно', true); return; }
     // Проверим пересечение с другими
-    for(let b of bookings){
-        if(b.id !== editingBookingId && b.spaceId === oldBooking.spaceId && b.date === nd && ns < b.endTime && ne > b.startTime){
+    for (let b of bookings) {
+        if (b.id !== editingBookingId && b.spaceId === oldBooking.spaceId && b.date === nd && ns < b.endTime && ne > b.startTime) {
             showToast('Уже занято в это время', true); return;
         }
     }
@@ -706,7 +716,7 @@ document.getElementById('saveEditBtn').onclick = async () => {
         editingBookingId = null;
         currentEditInvitedList = [];
         currentEditMaxInvites = null;
-    } catch(e) {
+    } catch (e) {
         showToast('Ошибка при обновлении: ' + e.message, true);
     }
 };
@@ -722,25 +732,27 @@ function renderCalendar() {
     const startWeekday = (firstDay.getDay() + 6) % 7;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const grid = document.getElementById('calendarGrid');
-    if(!grid) return;
-    while(grid.children.length > 7) grid.removeChild(grid.lastChild);
-    for(let i = 0; i < startWeekday; i++){
+    if (!grid) return;
+    while (grid.children.length > 7) grid.removeChild(grid.lastChild);
+    for (let i = 0; i < startWeekday; i++) {
         const empty = document.createElement('div');
         empty.className = 'calendar-day';
         empty.style.background = 'transparent';
         grid.appendChild(empty);
     }
-    for(let d = 1; d <= daysInMonth; d++){
-        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        const dayBookings = bookings.filter(b => b.date === dateStr && (currentUser ? b.userName === currentUser.username : false));
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const dayBookings = bookings.filter(
+            b => b.date === dateStr
+        );
         const div = document.createElement('div');
         div.className = 'calendar-day';
         const bookingDots = dayBookings.map(() => `<div class="booking-dot"></div>`).join('');
         div.innerHTML = `<div class="calendar-day-number">${d}</div>${bookingDots}${dayBookings.length > 0 ? '<div class="event-badge">Бронь</div>' : ''}`;
         div.onclick = () => {
-            if(dayBookings.length === 0){
+            if (dayBookings.length === 0) {
                 alert(`Нет броней на ${formatDateForDisplay(dateStr)}`);
-            } else if(dayBookings.length === 1){
+            } else if (dayBookings.length === 1) {
                 openBookingEditFromCalendar(dayBookings[0]);
             } else {
                 let selectHtml = '<div style="margin-bottom:15px;"><select id="bookingSelect" style="width:100%; padding:10px; border-radius:12px; border:1px solid var(--ibs-border);">';
@@ -762,7 +774,7 @@ function renderCalendar() {
                 document.getElementById('calendarSelectOkBtn').onclick = () => {
                     const selectedId = document.getElementById('bookingSelect').value;
                     const selectedBooking = dayBookings.find(b => b.id === selectedId);
-                    if(selectedBooking) openBookingEditFromCalendar(selectedBooking);
+                    if (selectedBooking) openBookingEditFromCalendar(selectedBooking);
                     tempModal.remove();
                 };
                 document.getElementById('calendarSelectCancelBtn').onclick = () => tempModal.remove();
@@ -787,10 +799,10 @@ function updateCalendarStats() {
 // --- Профиль ---
 function renderProfileBookingsList() {
     const div = document.getElementById('profileBookingsList');
-    if(!div) return;
-    if(!currentUser){ div.innerHTML = 'Войдите, чтобы управлять бронями'; return; }
+    if (!div) return;
+    if (!currentUser) { div.innerHTML = 'Войдите, чтобы управлять бронями'; return; }
     const ub = bookings.filter(b => b.userName === currentUser.username);
-    if(ub.length === 0){ div.innerHTML = 'Нет активных броней'; return; }
+    if (ub.length === 0) { div.innerHTML = 'Нет активных броней'; return; }
     div.innerHTML = ub.map(b => {
         const invited = b.invitedUsers && b.invitedUsers.length ? b.invitedUsers.map(u => {
             const user = users.find(usr => usr.username === u);
@@ -800,10 +812,10 @@ function renderProfileBookingsList() {
     }).join('');
 }
 
-window.cancelBooking = async function(id) {
+window.cancelBooking = async function (id) {
     const b = bookings.find(b => b.id == id);
-    if(!b) return;
-    if(!confirm(`Отменить бронь "${b.spaceName}"?`)) return;
+    if (!b) return;
+    if (!confirm(`Отменить бронь "${b.spaceName}"?`)) return;
     try {
         await deleteBookingOnServer(id, b.spaceType);
         renderMap();
@@ -811,7 +823,7 @@ window.cancelBooking = async function(id) {
         renderProfileBookingsList();
         showToast('Бронь отменена');
         addNotification(`Бронь ${b.spaceName} отменена`);
-    } catch(e) {
+    } catch (e) {
         showToast('Ошибка при отмене: ' + e.message, true);
     }
 };
@@ -833,7 +845,7 @@ function renderAdminPanel() {
             await addUserOnServer(fullName, login, email, pass);
             renderAdminPanel();
             showToast(`Сотрудник ${fullName} добавлен`);
-        } catch(e) {
+        } catch (e) {
             showToast('Ошибка: ' + e.message, true);
         }
     });
@@ -855,7 +867,7 @@ function renderEmployeeList() {
                 await deleteUserOnServer(username);
                 renderAdminPanel();
                 showToast(`Пользователь ${userToDelete.full_name} удалён`);
-            } catch(e) {
+            } catch (e) {
                 showToast('Ошибка: ' + e.message, true);
             }
         });
@@ -874,9 +886,9 @@ function switchPage(page) {
     if (filterBar) filterBar.style.display = page === 'map' ? 'flex' : 'none';
     document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
     const active = document.querySelector(`[data-page="${page}"]`);
-    if(active) active.classList.add('active');
-    if(page === 'calendar') renderCalendar();
-    if(page === 'profile'){ renderProfileBookingsList(); renderAdminPanel(); }
+    if (active) active.classList.add('active');
+    if (page === 'calendar') renderCalendar();
+    if (page === 'profile') { renderProfileBookingsList(); renderAdminPanel(); }
 }
 
 // --- Пользовательский интерфейс ---
@@ -893,67 +905,67 @@ function updateAuthUI() {
     document.getElementById('menuLoginBtn').style.display = currentUser ? 'none' : 'block';
     document.getElementById('menuLogoutBtn').style.display = currentUser ? 'block' : 'none';
     const header = document.getElementById('profileHeader'), loginBtn = document.getElementById('loginBtnItem'), logoutBtn = document.getElementById('logoutBtnItem');
-    if(currentUser){ header.innerHTML = escapeHtml(currentUser.fullName) + (isRealAdmin() ? ' (Админ)' : ''); loginBtn.style.display = 'none'; logoutBtn.style.display = 'flex'; } else { header.innerHTML = 'Профиль'; loginBtn.style.display = 'flex'; logoutBtn.style.display = 'none'; }
+    if (currentUser) { header.innerHTML = escapeHtml(currentUser.fullName) + (isRealAdmin() ? ' (Админ)' : ''); loginBtn.style.display = 'none'; logoutBtn.style.display = 'flex'; } else { header.innerHTML = 'Профиль'; loginBtn.style.display = 'flex'; logoutBtn.style.display = 'none'; }
     updateStats(); renderAdminPanel(); updateCalendarStats();
 }
 
 // --- Обработчики событий ---
 document.getElementById('menuLoginBtn').onclick = () => document.getElementById('authModal').classList.add('show');
-document.getElementById('menuLogoutBtn').onclick = () => { logout(); setTimeout(()=>location.reload(), 800); };
+document.getElementById('menuLogoutBtn').onclick = () => { logout(); setTimeout(() => location.reload(), 800); };
 document.getElementById('loginBtnItem').onclick = () => document.getElementById('authModal').classList.add('show');
-document.getElementById('logoutBtnItem').onclick = () => { logout(); setTimeout(()=>location.reload(), 800); };
+document.getElementById('logoutBtnItem').onclick = () => { logout(); setTimeout(() => location.reload(), 800); };
 
 document.getElementById('doLoginBtn').onclick = async () => {
     const username = document.getElementById('loginLogin').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
-    
-    if(!username || !password){ 
-        showToast('Введите логин и пароль', true); 
-        return; 
+
+    if (!username || !password) {
+        showToast('Введите логин и пароль', true);
+        return;
     }
-    
+
     try {
         // Теперь мы вызываем глобальную функцию login, передавая ей username
         await login(username, password);
         document.getElementById('authModal').classList.remove('show');
-    } catch(e) {
+    } catch (e) {
         // Добавлен вывод ошибки, чтобы вы видели, если бэкенд не отвечает
         console.error("Login failed:", e);
         showToast(e.message || 'Произошла ошибка при авторизации', true);
     }
 };
 document.getElementById('closeAuthBtn').onclick = () => document.getElementById('authModal').classList.remove('show');
-document.getElementById('viewProfileBtn').onclick = () => { document.querySelectorAll('.dropdown-menu').forEach(m=>m.classList.remove('show')); switchPage('profile'); };
+document.getElementById('viewProfileBtn').onclick = () => { document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show')); switchPage('profile'); };
 document.getElementById('backToMapBtn').onclick = () => switchPage('map');
 
 // --- Dropdowns ---
-function setupDropdown(btnId,menuId){ const btn=document.getElementById(btnId), menu=document.getElementById(menuId); if(btn&&menu) btn.onclick=(e)=>{ e.stopPropagation(); document.querySelectorAll('.dropdown-menu').forEach(m=>m.classList.remove('show')); menu.classList.toggle('show'); }; }
-setupDropdown('notifBtn','notifMenu'); setupDropdown('profileBtn','profileMenu');
-document.addEventListener('click',()=>document.querySelectorAll('.dropdown-menu').forEach(m=>m.classList.remove('show')));
-document.getElementById('clearAllNotifBtn')?.addEventListener('click',()=>{ notifications=[]; saveToLocal(); updateNotificationsUI(); showToast('Уведомления очищены'); });
+function setupDropdown(btnId, menuId) { const btn = document.getElementById(btnId), menu = document.getElementById(menuId); if (btn && menu) btn.onclick = (e) => { e.stopPropagation(); document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show')); menu.classList.toggle('show'); }; }
+setupDropdown('notifBtn', 'notifMenu'); setupDropdown('profileBtn', 'profileMenu');
+document.addEventListener('click', () => document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show')));
+document.getElementById('clearAllNotifBtn')?.addEventListener('click', () => { notifications = []; saveToLocal(); updateNotificationsUI(); showToast('Уведомления очищены'); });
 
 // --- Уведомления (локальные) ---
 let notifications = JSON.parse(localStorage.getItem('officeNotifications')) || [];
 function addNotification(text) { notifications.unshift({ id: Date.now(), text, time: new Date().toLocaleTimeString(), read: false }); if (notifications.length > 30) notifications.pop(); saveToLocal(); updateNotificationsUI(); }
-function updateNotificationsUI() { const c = document.getElementById('notificationsList'); const b=document.getElementById('notifBadge'); if(b){b.style.display=notifications.length?'flex':'none'; b.textContent=notifications.length;} if (!c) return; if (notifications.length === 0) { c.innerHTML = '<div class="dropdown-item" style="color:var(--ibs-text-light);">Нет уведомлений</div>'; return; } c.innerHTML = notifications.slice(0,15).map(n => `<div class="dropdown-item"><div>${escapeHtml(n.text)}</div><div style="font-size:0.7rem;color:var(--ibs-text-light);">${n.time}</div></div>`).join(''); }
+function updateNotificationsUI() { const c = document.getElementById('notificationsList'); const b = document.getElementById('notifBadge'); if (b) { b.style.display = notifications.length ? 'flex' : 'none'; b.textContent = notifications.length; } if (!c) return; if (notifications.length === 0) { c.innerHTML = '<div class="dropdown-item" style="color:var(--ibs-text-light);">Нет уведомлений</div>'; return; } c.innerHTML = notifications.slice(0, 15).map(n => `<div class="dropdown-item"><div>${escapeHtml(n.text)}</div><div style="font-size:0.7rem;color:var(--ibs-text-light);">${n.time}</div></div>`).join(''); }
 function saveToLocal() { localStorage.setItem('officeNotifications', JSON.stringify(notifications)); }
 
 // --- Фильтры ---
 document.getElementById('globalDateFilter').valueAsDate = new Date();
-document.getElementById('globalDateFilter').addEventListener('change',()=>{ renderMap(); renderCalendar(); });
-document.getElementById('globalStartFilter').addEventListener('change',()=>renderMap());
-document.getElementById('globalEndFilter').addEventListener('change',()=>renderMap());
-document.getElementById('officeSelect').addEventListener('change',()=>renderMap());
-document.getElementById('floorSelect').addEventListener('change',()=>renderMap());
-document.querySelectorAll('.menu-item').forEach(el=>el.addEventListener('click',()=>switchPage(el.dataset.page)));
-document.getElementById('prevMonthBtn').onclick = () => { currentCalendarDate.setMonth(currentCalendarDate.getMonth()-1); renderCalendar(); };
-document.getElementById('nextMonthBtn').onclick = () => { currentCalendarDate.setMonth(currentCalendarDate.getMonth()+1); renderCalendar(); };
+document.getElementById('globalDateFilter').addEventListener('change', () => { renderMap(); renderCalendar(); });
+document.getElementById('globalStartFilter').addEventListener('change', () => renderMap());
+document.getElementById('globalEndFilter').addEventListener('change', () => renderMap());
+document.getElementById('officeSelect').addEventListener('change', () => renderMap());
+document.getElementById('floorSelect').addEventListener('change', () => renderMap());
+document.querySelectorAll('.menu-item').forEach(el => el.addEventListener('click', () => switchPage(el.dataset.page)));
+document.getElementById('prevMonthBtn').onclick = () => { currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1); renderCalendar(); };
+document.getElementById('nextMonthBtn').onclick = () => { currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1); renderCalendar(); };
 
 // --- Зум ---
-function zoomIn(){ if(currentZoom < MAX_ZOOM){ currentZoom = Math.min(+(currentZoom + 0.1).toFixed(1), MAX_ZOOM); updateZoomDisplay(); } }
-function zoomOut(){ if(currentZoom > MIN_ZOOM){ currentZoom = Math.max(+(currentZoom - 0.1).toFixed(1), MIN_ZOOM); updateZoomDisplay(); } }
-function resetZoom(){ currentZoom = 1.0; updateZoomDisplay(); const w = document.getElementById('mapWrapper'); if(w){ w.scrollLeft = 0; w.scrollTop = 0; } showToast('Масштаб сброшен'); }
-function updateZoomDisplay(){ const inner = document.getElementById('mapInner'); if(inner) inner.style.transform = `scale(${currentZoom})`; const lvl = document.getElementById('zoomLevel'); if(lvl) lvl.innerText = Math.round(currentZoom * 100) + '%'; }
+function zoomIn() { if (currentZoom < MAX_ZOOM) { currentZoom = Math.min(+(currentZoom + 0.1).toFixed(1), MAX_ZOOM); updateZoomDisplay(); } }
+function zoomOut() { if (currentZoom > MIN_ZOOM) { currentZoom = Math.max(+(currentZoom - 0.1).toFixed(1), MIN_ZOOM); updateZoomDisplay(); } }
+function resetZoom() { currentZoom = 1.0; updateZoomDisplay(); const w = document.getElementById('mapWrapper'); if (w) { w.scrollLeft = 0; w.scrollTop = 0; } showToast('Масштаб сброшен'); }
+function updateZoomDisplay() { const inner = document.getElementById('mapInner'); if (inner) inner.style.transform = `scale(${currentZoom})`; const lvl = document.getElementById('zoomLevel'); if (lvl) lvl.innerText = Math.round(currentZoom * 100) + '%'; }
 
 // --- Инициализация данных карты ---
 if (!localStorage.getItem('data_fixed')) {
@@ -980,7 +992,7 @@ if (typeof defaultFloorData !== 'undefined' && defaultFloorData.spb_5 && default
 loadCurrentUser();
 if (currentUser) {
     // Загружаем пользователей и брони, обновляем UI
-    (async function() {
+    (async function () {
         await loadUsers();
         await loadBookings();
         updateAuthUI();
@@ -999,5 +1011,5 @@ switchPage('map');
 
 // --- Логотип IBS (оставляем как было) ---
 const ibsLogoImg = new Image();
-ibsLogoImg.onload = function(){ const ml = document.getElementById('menuLogoContainer'); if(ml){ ml.innerHTML = ''; ml.style.background = 'transparent'; const img = document.createElement('img'); img.src = 'assets/ibs-logo.png'; img.style.cssText = 'width:44px;height:44px;object-fit:contain;border-radius:12px;'; ml.appendChild(img); } const hl = document.getElementById('headerLogoContainer'); if(hl){ hl.innerHTML = ''; hl.style.background = 'transparent'; const img2 = document.createElement('img'); img2.src = 'assets/ibs-logo.png'; img2.style.cssText = 'width:48px;height:48px;object-fit:contain;border-radius:14px;'; hl.appendChild(img2); } };
+ibsLogoImg.onload = function () { const ml = document.getElementById('menuLogoContainer'); if (ml) { ml.innerHTML = ''; ml.style.background = 'transparent'; const img = document.createElement('img'); img.src = 'assets/ibs-logo.png'; img.style.cssText = 'width:44px;height:44px;object-fit:contain;border-radius:12px;'; ml.appendChild(img); } const hl = document.getElementById('headerLogoContainer'); if (hl) { hl.innerHTML = ''; hl.style.background = 'transparent'; const img2 = document.createElement('img'); img2.src = 'assets/ibs-logo.png'; img2.style.cssText = 'width:48px;height:48px;object-fit:contain;border-radius:14px;'; hl.appendChild(img2); } };
 ibsLogoImg.src = 'assets/ibs-logo.png';
