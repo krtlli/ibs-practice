@@ -170,6 +170,7 @@ function logout() {
     renderCalendar();
     renderAdminPanel();
     showToast('Вы вышли');
+    window.location.href = '/';
 }
 
 // --- Создание брони ---

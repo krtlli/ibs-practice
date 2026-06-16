@@ -2,168 +2,39 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>SpaceManage Pro — IBS</title>
-    <link rel="stylesheet" href="css/base.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpaceManage — IBS Умный офис</title>
+    <link rel="stylesheet" href="css/index.css">
 </head>
 <body>
-<div class="app-wrapper">
-    <div class="sidebar-menu">
-        <div class="menu-logo">
-            <div class="menu-logo-img" id="menuLogoContainer">IBS</div>
-            <div class="menu-logo-text"><h2>SpaceManage</h2><p>IBS · Умный офис</p></div>
-        </div>
-        <div class="menu-nav">
-            <div class="menu-item btn-mp animated-btn" data-page="map">Карта офиса</div>
-            <div class="menu-item btn-cl animated-btn" data-page="calendar">Календарь</div>
-            <div class="menu-item btn-wp animated-btn" data-page="profile">Личный кабинет</div>
-        </div>
-        <div class="menu-user-card" id="menuUserCard">
-            <div class="menu-user-name" id="menuUserName">Гость</div>
-            <div class="menu-user-email" id="menuUserEmail">Войдите в систему</div>
-            <button class="btn-enter animated-btn" id="menuLoginBtn">Войти</button>
-            <button class="btn-ex animated-btn" id="menuLogoutBtn">Выйти</button>
-        </div>
-    </div>
-    <div class="main-area">
-        <div class="main-header">
-            <div class="logo-area">
-                <div class="logo-img-header" id="headerLogoContainer">IBS</div>
-                <div class="logo-text"><h1>SpaceManage Pro</h1><p>Санкт-Петербург, Английская набережная 70</p></div>
-            </div>
-            <div class="nav-controls">
-                <div class="office-selector"><select id="officeSelect"><option value="spb" selected>Санкт-Петербург</option><option value="msk">Москва — в разработке</option><option value="kazan">Казань — в разработке</option></select></div>
-                <div class="floor-selector"><select id="floorSelect"><option value="5" selected>5 этаж</option><option value="3">3 этаж</option></select></div>
-            </div>
-            <div class="filter-bar">
-                <div class="filter-group"><label>Дата</label><input type="date" id="globalDateFilter"></div>
-                <div class="filter-group"><label>С</label><input type="time" id="globalStartFilter" value="09:00"></div>
-                <div class="filter-group"><label>До</label><input type="time" id="globalEndFilter" value="20:00"></div>
-            </div>
-            <div class="header-actions">
-                <div class="dropdown"><button class="icon-btn animated-btn" id="notifBtn"></button><span id="notifBadge" class="notification-badge"></span><div class="dropdown-menu" id="notifMenu"><div class="dropdown-header">Уведомления<button id="clearAllNotifBtn" style="background:none;border:none;cursor:pointer;">✖</button></div><div id="notificationsList"></div></div></div>
-                <div class="dropdown"><button class="icon-btn animated-btn" id="profileBtn"></button><div class="dropdown-menu" id="profileMenu"><div class="dropdown-header" id="profileHeader">Профиль</div><div class="dropdown-item" id="viewProfileBtn">Мой профиль</div><div class="dropdown-item" id="loginBtnItem">Войти</div><div class="dropdown-item" id="logoutBtnItem" style="display:none;">Выйти</div></div></div>
-            </div>
-        </div>
-        <div id="mapPage"></div>
-        <div id="calendarPage" class="calendar-view">
-            <div class="calendar-stats">
-                <div class="stat-card">Мои брони <span id="calendarBookingsCount">0</span></div>
-            </div>
-            <div class="calendar-header"><button class="btn btn-secondary" id="prevMonthBtn">Назад</button><h2 id="currentMonthYear"></h2><button class="btn btn-secondary" id="nextMonthBtn">Вперёд</button></div>
-            <div class="calendar-grid" id="calendarGrid"><div class="calendar-weekday">Пн</div><div class="calendar-weekday">Вт</div><div class="calendar-weekday">Ср</div><div class="calendar-weekday">Чт</div><div class="calendar-weekday">Пт</div><div class="calendar-weekday">Сб</div><div class="calendar-weekday">Вс</div></div>
-        </div>
-        <div id="profilePage" class="profile-page">
-            <div class="profile-header"><div class="profile-title">Личный кабинет</div><button class="back-btn" id="backToMapBtn">На карту</button></div>
-            <div id="profileBookingsContainer" style="margin-bottom:20px;"><h4>Мои активные бронирования</h4><div id="profileBookingsList"></div></div>
-            <div id="adminPanelContainer"></div>
-        </div>
-    </div>
-</div>
 
-<!-- Модальное окно бронирования -->
-<div id="bookingModal" class="booking-modal">
-    <div class="booking-modal-content">
-        <h3>Бронирование места</h3>
-        <div id="modalSelectedSpace" style="margin-bottom: 20px; font-weight: 500; color: var(--ibs-blue);">—</div>
-        <div class="booking-two-columns">
-            <div class="booking-left-column">
-                <div class="form-group">
-                    <label>Дата</label>
-                    <input type="date" id="modalBookingDate">
-                </div>
-                <div class="form-group">
-                    <label>Начало</label>
-                    <input type="time" id="modalStartTime">
-                </div>
-                <div class="form-group">
-                    <label>Конец</label>
-                    <input type="time" id="modalEndTime">
-                </div>
-            </div>
-            <div class="booking-right-column">
-                <div class="invite-group">
-                    <div class="invite-header">
-                        <label>Пригласить коллег</label>
-                        <span id="capacityInfo" class="capacity-info"></span>
-                        <button type="button" class="add-invite-btn" id="addInviteBtn">+</button>
-                    </div>
-                    <div class="invite-list-wrapper">
-                        <div id="inviteListContainer" class="invite-list"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="modal-buttons">
-            <button class="btn-cancel animated-btn" id="closeModalBtn">Отмена</button>
-            <button class="btn-book animated-btn" id="confirmBookingBtn">Забронировать</button>
-        </div>
+    <div class="brand-container">
+        <img class="brand-logo" src="assets/ibs-logo.png" alt="IBS Logo">
+        <h1 class="brand-title">SpaceManage</h1>
+        <p class="brand-subtitle">IBS <span>·</span> Умный офис</p>
     </div>
-</div>
 
-<!-- Подтверждение бронирования -->
-<div class="confirm-popup" id="confirmPopup">
-    <div class="confirm-popup-title">Подтвердите бронирование</div>
-    <div id="confirmPopupInfo">—</div>
-    <div class="confirm-popup-btns">
-        <button class="btn-cancel animated-btn" id="confirmPopupCancelBtn">Отмена</button>
-        <button class="btn-ok animated-btn" id="confirmPopupOkBtn">Подтвердить</button>
-    </div>
-</div>
+    <button class="open-btn" id="openModalBtn">Войти в систему</button>
 
-<!-- Редактирование брони -->
-<div id="editModal" class="booking-modal">
-    <div class="booking-modal-content">
-        <h3>Редактирование брони</h3>
-        <div id="editSelectedSpace" style="margin-bottom: 20px; font-weight: 500; color: var(--ibs-blue);">—</div>
-        <div class="booking-two-columns">
-            <div class="booking-left-column">
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content">
+            <span class="close-btn" id="closeModalBtn">&times;</span>
+            <h2>Авторизация</h2>
+            <form id="loginForm">
                 <div class="form-group">
-                    <label>Дата</label>
-                    <input type="date" id="editBookingDate">
+                    <label for="username">Логин:</label>
+                    <input type="text" id="username" required placeholder="Введите логин">
                 </div>
                 <div class="form-group">
-                    <label>Начало</label>
-                    <input type="time" id="editStartTime">
+                    <label for="password">Пароль:</label>
+                    <input type="password" id="password" required placeholder="Введите пароль">
                 </div>
-                <div class="form-group">
-                    <label>Конец</label>
-                    <input type="time" id="editEndTime">
-                </div>
-            </div>
-            <div class="booking-right-column">
-                <div class="invite-group">
-                    <div class="invite-header">
-                        <label>Пригласить коллег</label>
-                        <span id="editCapacityInfo" class="capacity-info"></span>
-                        <button type="button" class="add-invite-btn" id="editAddInviteBtn">+</button>
-                    </div>
-                    <div class="invite-list-wrapper">
-                        <div id="editInviteListContainer" class="invite-list"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="modal-buttons">
-            <button class="btn-ok animated-btn" id="saveEditBtn">Сохранить</button>
-            <button class="animated-btn btn-clo" id="closeEditBtn">Закрыть</button>
+                <button type="submit" class="submit-btn">Подтвердить</button>
+                <div id="loginError" class="error-msg"></div>
+            </form>
         </div>
     </div>
-</div>
 
-<!-- Авторизация -->
-<div id="authModal" class="booking-modal">
-    <div class="booking-modal-content">
-        <h3>Авторизация</h3>
-        <div class="form-group"><input type="text" id="loginLogin" placeholder="Логин"></div>
-        <div class="form-group"><input type="password" id="loginPassword" placeholder="Пароль"></div>
-        <div class="modal-buttons">
-            <button class="btn-secondary" id="closeAuthBtn">Отмена</button>
-            <button class="btn-primary" id="doLoginBtn">Войти</button>
-        </div>
-    </div>
-</div>
-<script src="js/floor.js"></script>
-<script src="js/base.js"></script>
+<script src="js/index.js"></script>
 </body>
 </html>

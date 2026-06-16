@@ -43,15 +43,12 @@ project_root = os.path.dirname(current_dir)
 cert_path = os.path.join(project_root, "cert/server.crt")
 key_path = os.path.join(project_root, "cert/server.key")
 
-'''
 uvicorn.run(
     "main:app",
     host="127.0.0.1",
-    port=8443,
+    port=8000,
     app_dir=current_dir,
     reload=False,
-    ssl_certfile=cert_path if os.path.exists(cert_path) else None,
-    ssl_keyfile=key_path if os.path.exists(key_path) else None
+    # ssl_certfile=cert_path if os.path.exists(cert_path) else None,
+    # ssl_keyfile=key_path if os.path.exists(key_path) else None
 )
-'''
-uvicorn.run("main:app", host="127.0.0.1", port=8000)
