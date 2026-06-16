@@ -14,7 +14,7 @@ def get_users():
     # Открываем соединение и получаем список юзеров
     with sqlite3.connect(DB_FILE) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT username, full_name, email FROM users WHERE username != 'admin'")
+        cursor.execute("SELECT username, full_name, email FROM users")
         return [{"username": row[0], "full_name": row[1], "email": row[2]} for row in cursor.fetchall()]
 
 @router.post("/api/users/add")
@@ -85,8 +85,19 @@ def delete_user(username_to_delete: str, x_token: str = Header(alias="x-token"))
         cursor.execute("SELECT 1 FROM users WHERE username = ?", (username_to_delete,))
         if not cursor.fetchone():
             raise HTTPException(status_code=404, detail="Пользователь не найден")
-    with sqlite3.connect(DB_FILE) as conn:
-        cursor = conn.cursor()
+        
+        cursor.execute(
+            "SELECT is_admin FROM users WHERE username = ?",
+            (username_to_delete,)
+        )
+        target_row = cursor.fetchone()
+
+        if target_row and target_row[0] and username_to_delete == x_token:
+            raise HTTPException(
+                status_code=400,
+                detail="Администратор не может удалить собственную учетную запись"
+            )
+        
         cursor.execute("SELECT id, participants FROM bookings WHERE username = ?", (username_to_delete,))
         own_bookings = cursor.fetchall()
         for booking_id, raw_participants in own_bookings:
@@ -105,6 +116,7 @@ def delete_user(username_to_delete: str, x_token: str = Header(alias="x-token"))
                 )
             else:
                 cursor.execute("DELETE FROM bookings WHERE id = ?", (booking_id,))
+
         cursor.execute("SELECT id, participants FROM bookings WHERE username != ?", (username_to_delete,))
         other_bookings = cursor.fetchall()
         for booking_id, raw_participants in other_bookings:
@@ -119,8 +131,7 @@ def delete_user(username_to_delete: str, x_token: str = Header(alias="x-token"))
                     (json.dumps(participants, ensure_ascii=False), booking_id)
                 )
         conn.commit()
-    with sqlite3.connect(DB_FILE) as conn:
-        cursor = conn.cursor()
+
         cursor.execute("DELETE FROM workspace_bookings WHERE username = ?", (username_to_delete,))
         cursor.execute("DELETE FROM users WHERE username = ?", (username_to_delete,))
         conn.commit()

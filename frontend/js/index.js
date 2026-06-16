@@ -19,18 +19,9 @@ loginForm.addEventListener('submit', async (event) => {
 
     loginError.textContent = '';
 
-    if (!username) {
-        loginError.textContent = 'Введите логин';
-        return;
-    }
-
-    if (!password) {
-        loginError.textContent = 'Введите пароль';
-        return;
-    }
-
     try {
-        const response = await fetch('/api/login', {
+        // логин
+        const loginResp = await fetch('/api/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -41,39 +32,57 @@ loginForm.addEventListener('submit', async (event) => {
             })
         });
 
-        const data = await response.json();
+        const loginData = await loginResp.json();
 
-        if (!response.ok) {
+        if (!loginResp.ok) {
             loginError.textContent =
-                data.detail || 'Ошибка авторизации';
+                loginData.detail || 'Ошибка авторизации';
             return;
         }
 
-        const userData = {
-            username: username,
-            token: data.token,
-            isAdmin: data.is_admin
+        const token = loginData.token;
+        const isAdmin = loginData.is_admin;
+
+        // загрузка пользователей
+        const usersResp = await fetch('/api/users', {
+            headers: {
+                'X-Token': token
+            }
+        });
+
+        let fullName = token;
+        let email = '';
+
+        if (usersResp.ok) {
+            const users = await usersResp.json();
+
+            const me = users.find(
+                u => u.username === token
+            );
+
+            if (me) {
+                fullName = me.full_name || token;
+                email = me.email || '';
+            }
+        }
+
+        // формат как в base.js
+        const currentUser = {
+            username: token,
+            fullName,
+            email,
+            isAdmin
         };
 
         localStorage.setItem(
             'officeUser',
-            JSON.stringify(userData)
-        );
-
-        modalOverlay.style.display = 'none';
-        loginForm.reset();
-
-        alert(
-            `✅ Успешный вход! ${
-                data.is_admin
-                    ? 'Администратор'
-                    : 'Сотрудник'
-            }`
+            JSON.stringify(currentUser)
         );
 
         window.location.href = 'base.html';
-    } catch (error) {
-        console.error(error);
+
+    } catch (err) {
+        console.error(err);
         loginError.textContent =
             'Не удалось подключиться к серверу';
     }
