@@ -70,6 +70,7 @@ async function loadBookings() {
         const workspaceBookings = await apiRequest('GET', '/api/booking-workspace');
         const all = [];
 
+        // Переговорные
         roomBookings.forEach(b => {
             // Пробуем найти комнату по id (новый формат), затем по имени (старый формат)
             let room = meetingRooms.find(r => r.id === b.room);
@@ -622,11 +623,10 @@ window.editBooking = function (id) {
     const b = bookings.find(b => b.id == id);
     if (!b) return;
     editingBookingId = id;
+    // Определяем максимальное количество приглашений
     if (b.spaceType === 'meeting_room') {
         const room = meetingRooms.find(r => r.id === b.spaceId);
         currentEditMaxInvites = room ? room.capacity : null;
-    } else if (['playstation', 'recreation', 'tennis'].includes(b.spaceType)) {
-        currentEditMaxInvites = 4;
     } else {
         currentEditMaxInvites = 0;
     }
@@ -734,9 +734,7 @@ function renderCalendar() {
     }
     for (let d = 1; d <= daysInMonth; d++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        const dayBookings = bookings.filter(
-            b => b.date === dateStr
-        );
+        const dayBookings = bookings.filter(b => b.date === dateStr && (currentUser ? b.userName === currentUser.username : false));
         const div = document.createElement('div');
         div.className = 'calendar-day';
         const bookingDots = dayBookings.map(() => `<div class="booking-dot"></div>`).join('');
