@@ -70,7 +70,6 @@ async function loadBookings() {
         const workspaceBookings = await apiRequest('GET', '/api/booking-workspace');
         const all = [];
 
-        // Переговорные
         roomBookings.forEach(b => {
             // Пробуем найти комнату по id (новый формат), затем по имени (старый формат)
             let room = meetingRooms.find(r => r.id === b.room);
@@ -125,17 +124,7 @@ async function loadBookings() {
             });
         });
 
-        // Админ видит всё, остальные только свои и приглашения
-        if (!currentUser?.isAdmin) {
-            bookings = all.filter(
-                b =>
-                    b.userName === currentUser.username ||
-                    b.invitedUsers?.includes(currentUser.username)
-            );
-        } else {
-            bookings = all;
-        }
-
+        bookings = all;
         return bookings;
     } catch (e) {
         showToast('Не удалось загрузить бронирования', true);
@@ -187,7 +176,7 @@ function logout() {
 async function createBookingOnServer(spaceId, spaceName, spaceType, date, startTime, endTime, invitedLogins) {
 
     const formatTime = (time) => time.length === 5 ? time + ':00' : time;
-    if (spaceType === 'meeting_room') {
+    if (['meeting_room', 'playstation', 'tennis', 'recreation'].includes(spaceType)) {
         const payload = {
             room: spaceId,
             booking_date: date,
@@ -209,7 +198,8 @@ async function createBookingOnServer(spaceId, spaceName, spaceType, date, startT
 }
 
 async function deleteBookingOnServer(bookingId, spaceType) {
-    const endpoint = spaceType === 'meeting_room' ? `/api/booking-rooms/${bookingId}` : `/api/booking-workspace/${bookingId}`;
+    const isRoomType = ['meeting_room', 'playstation', 'tennis', 'recreation'].includes(spaceType);
+    const endpoint = isRoomType ? `/api/booking-rooms/${bookingId}` : `/api/booking-workspace/${bookingId}`;
     await apiRequest('DELETE', endpoint, null, currentUser.username);
     await loadBookings();
 }
@@ -533,7 +523,7 @@ function openBookingModal(item, type) {
     if (!currentUser) { document.getElementById('authModal').classList.add('show'); return; }
     currentSelectedItem = { id: item.id, name: item.name, type: type };
     if (type === 'meeting_room') { const room = meetingRooms.find(r => r.id === item.id); currentMaxInvites = room ? room.capacity : null; }
-    else if (type === 'playstation' || type === 'recreation') { currentMaxInvites = 2; }
+    else if (type === 'playstation' || type === 'recreation' || type === 'tennis') { currentMaxInvites = 4; }
     else { currentMaxInvites = 0; }
     const inviteGroup = document.querySelector('#bookingModal .invite-group'); if (inviteGroup) inviteGroup.style.display = currentMaxInvites > 0 ? 'block' : 'none';
     const cols = document.querySelector('#bookingModal .booking-two-columns'); if (cols) { cols.classList.toggle('single-seat-mode', currentMaxInvites <= 0); }
@@ -632,10 +622,11 @@ window.editBooking = function (id) {
     const b = bookings.find(b => b.id == id);
     if (!b) return;
     editingBookingId = id;
-    // Определяем максимальное количество приглашений
     if (b.spaceType === 'meeting_room') {
         const room = meetingRooms.find(r => r.id === b.spaceId);
         currentEditMaxInvites = room ? room.capacity : null;
+    } else if (['playstation', 'recreation', 'tennis'].includes(b.spaceType)) {
+        currentEditMaxInvites = 4;
     } else {
         currentEditMaxInvites = 0;
     }
@@ -688,7 +679,7 @@ document.getElementById('saveEditBtn').onclick = async () => {
     if (ns >= ne) { showToast('Время некорректно', true); return; }
     // Проверим пересечение с другими
     for (let b of bookings) {
-        if (b.id !== editingBookingId && b.spaceId === oldBooking.spaceId && b.date === nd && ns < b.endTime && ne > b.startTime) {
+        if (b.id != editingBookingId && b.spaceId === oldBooking.spaceId && b.date === nd && ns < b.endTime && ne > b.startTime) {
             showToast('Уже занято в это время', true); return;
         }
     }
